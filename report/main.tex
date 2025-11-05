@@ -1,0 +1,433 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\title{\textbf{Coursidor}}
+\author{Enzo Picarel, Raphaël Bely, Arno Donias, Thibault Abeille\\
+Encadrants : Adrien Aguila--Multner, David Renault \\ ENSEIRB-MATMECA - 2025}
+\date{\today}
+
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{backcolor}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+  backgroundcolor=\color{backcolor},
+  commentstyle=\color{gray},
+  keywordstyle=\color{blue},
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{orange},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  captionpos=b,
+  keepspaces=true,
+  numbers=left,
+  numbersep=5pt,
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\newpage
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+
+\section{Introduction}
+
+Le projet \textbf{Coursidor} est une variante du jeu de société Quoridor, créé par Mirko Marchesi en 1997. 
+Dans la version classique, deux joueurs font avancer leur pion sur un plateau carré, avec pour but d'atteindre le côté opposé. 
+Ils peuvent poser des murs pour gêner l'autre, mais sans jamais lui bloquer complètement le passage.
+
+
+Dans \textbf{Coursidor}, l'objectif est modifié : chaque joueur doit parcourir le plateau pour passer sur un ensemble de bases 
+(appelées \emph{objectifs}), dans n'importe quel ordre, avant de revenir à son point de départ. 
+Le premier à valider tous les objectifs et à revenir gagne la partie. Les joueurs disposent d'un nombre limité de murs, 
+qu'ils peuvent placer pour gêner l'adversaire, mais ils ne doivent jamais l'empêcher totalement de finir la partie.
+
+Le plateau de jeu est modélisé par un graphe, sous-graphe du pavage triangulaire, 
+représenté en mémoire par une matrice creuse au format CSR (Compressed Sparse Row) de la bibliothèque GNU Scientific Library (GSL). 
+Chaque sommet du graphe correspond à une case du plateau, et les arêtes représentent les déplacements possibles. 
+Les directions des arêtes sont codées pour faciliter la gestion des mouvements et des murs.
+
+Chaque tour, un joueur choisit soit de déplacer son pion (en respectant des règles de distance et de direction selon le mouvement précédent), 
+soit de placer un mur sur deux arêtes consécutives d'un sommet. Les coups sont représentés par la structure \texttt{struct move\_t},
+qui indique le type de coup, la couleur du joueur, la position ou les arêtes concernées.
+
+Le cœur du projet repose sur un serveur (\texttt{server.c}) qui gère la partie, initialise le plateau et les joueurs, 
+puis fait jouer les deux clients à tour de rôle. Ces clients sont chargés dynamiquement avec \texttt{dlopen} et \texttt{dlsym},
+ce qui permet de les développer indépendamment du serveur.
+Chaque client suit une interface commune définie dans (\texttt{player.h}) et prend ses décisions de manière autonome, 
+selon sa propre stratégie.
+
+Ce projet a plusieurs objectifs pédagogiques :
+\begin{itemize}
+    \item Comprendre et manipuler des structures de données avancées (graphes, matrices creuses CSR).
+    \item Utiliser la bibliothèque GSL pour la représentation efficace des graphes.
+    \item Maîtriser la programmation modulaire en C, la compilation de bibliothèques partagées, et le chargement dynamique de code (\texttt{dlopen}).
+    \item Mettre en place des stratégies d'intelligence artificielle pour le jeu.
+    \item Organiser le code en modules testables, avec une couverture de tests automatisée.
+    \item Utiliser des outils de gestion de version (Git) et des outils de formatage (Clang Format).
+\end{itemize}
+
+Le rapport est structuré en suivant les grandes étapes du projet : architecture et découpage, modélisation du plateau, 
+gestion de la partie, stratégies de jeu, validation par les tests, et enfin bilan et perspectives d'amélioration.
+
+\section{Architecture générale du projet / Découpage du code}
+
+Le projet est organisé de façon modulaire, avec une séparation claire entre le cœur du jeu, les stratégies de joueurs, la gestion des graphes, 
+et les tests. L'arborescence du dépôt est la suivante :
+
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+  .
+  |-- .clang-format
+  |-- .gitignore
+  |-- install
+  |-- Makefile
+  |-- name.txt
+  |-- README.md
+  |-- report
+  |   `-- main.tex
+  |-- src
+  |   |-- astar_player.c
+  |   |-- astar_player.h
+  |   |-- gen_graph.c
+  |   |-- gen_graph.h
+  |   |-- graph.h
+  |   |-- heldkarp_player.c
+  |   |-- heldkarp_player.h
+  |   |-- move.h
+  |   |-- player.h
+  |   |-- random_player.c
+  |   |-- random_player.h
+  |   `-- server.c
+  `-- test
+      |-- test_graph.c
+      |-- test_main.c
+      `-- test_player.c\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{src/server.c} : Gère l'organisation de la partie, l'initialisation du plateau, la gestion des joueurs, l'alternance des coups, 
+    le chargement dynamique des clients (\texttt{dlopen}, \texttt{dlsym}), et la vérification des règles globales.
+    \item \textbf{src/astar\_player.c}, \textbf{src/heldkarp\_player.c}, \textbf{src/random\_player.c} : Implémentent différentes stratégies de joueurs automatiques, 
+    chacun étant compilé en bibliothèque partagée (\texttt{.so}) et chargé dynamiquement par le serveur. 
+    Chaque joueur implémente l'interface définie dans \texttt{player.h}.
+    \item \textbf{src/gen\_graph.c}, \textbf{src/gen\_graph.h}, \textbf{src/graph.h} : Gestion de la création, 
+    manipulation et abstraction des graphes de jeu (\texttt{struct graph\_t}), génération des différents plateaux, 
+    et interface avec la bibliothèque GSL (matrices creuses CSR).
+    \item \textbf{src/move.h} : Définit la structure des coups (\texttt{struct move\_t}), les types de coups, les couleurs des joueurs, 
+    et les structures associées (\texttt{struct edge\_t}).
+    \item \textbf{src/player.h} : Spécifie l'interface que chaque client doit implémenter (\lstinline|initialize|, \lstinline|play|, \lstinline|finalize|).
+    \item \textbf{test/} : Contient les fichiers de tests unitaires (\lstinline|test\_graph.c|, \lstinline|test\_main.c|,\\ \lstinline|test\_player.c|), 
+    permettant de valider les fonctions de manipulation de graphes, la génération des plateaux, et le comportement des joueurs.
+    \item \textbf{Makefile} : Automatisation de la compilation, des tests, de l'installation des exécutables et des bibliothèques partagées. 
+    Prend en compte la variable \texttt{GSL\_PATH} pour la portabilité.
+    \item \textbf{.clang-format} : Fichier de configuration pour l'outil de formatage automatique du code source, garantissant une homogénéité du style.
+    \item \textbf{.gitignore} : Liste les fichiers et dossiers à exclure du suivi de version Git (fichiers objets, exécutables, etc.).
+    \item \textbf{README.md} : Documentation synthétique du projet, instructions de compilation et d'exécution.
+\end{itemize}
+
+Le code est formaté automatiquement avec \texttt{clang-format} grâce au fichier de configuration dédié. 
+
+Le suivi des versions et la collaboration sont fais avec Git, avec un fichier \texttt{.gitignore} adapté pour éviter le versionnage des fichiers générés.
+
+Cette organisation permet de séparer clairement la logique du jeu, les stratégies de joueurs, la gestion des graphes et les tests, 
+et facilite l'ajout de nouvelles stratégies ou de nouveaux types de plateaux.
+
+
+\section{Modélisation du plateau avec des graphes}
+
+\subsection*{Structure de données}
+Notre implémentation des graphes repose sur la structure \lstinline|struct graph_t| définie dans \lstinline|graph.h| :
+\begin{itemize}
+    \item un champ \texttt{type} pour distinguer les variantes (TRIANGULAR, CYCLIC, HOLED).
+    \item \texttt{unsigned int num\_vertices} : nombre de sommets du graphe.
+    \item \texttt{unsigned int num\_edges} : nombre d'arêtes actuellement présentes.
+    \item \texttt{gsl\_spmatrix\_uint *t} : matrice creuse (GSL) stockant les arêtes avant conversion.
+    \item \texttt{vertex\_t start[NUM\_PLAYERS]} : positions de départ des joueurs.
+    \item \texttt{unsigned int num\_objectives} : nombre d'objectifs à atteindre.
+    \item \texttt{vertex\_t *objectives} : tableau des positions des objectifs à atteindre.
+\end{itemize}
+
+\subsection*{Génération des graphes}
+Les deux variantes de plateau de jeux implémentées sont les suivantes :
+\begin{description}
+  \item[Triangulaire] \texttt{graph\_create\_triangular(m)} construit un pavage triangulaire de \\taille~$m$.
+    \begin{itemize}
+      \item Nombre de sommets : $3m^2 - 3m + 1$.
+      \item Nombre d'arêtes : $9m^2 - 15m + 6$.
+      \item Patrons d'ajout :
+        \begin{itemize}
+          \item \textbf{Haut du pavage} (lignes $0 \le \text{row} < m-1$) :
+            \lstinline|for(col=0; col<m+row; ++col)| \\
+            \lstinline|graph_add_edge(..., E)| (horizontal),  
+            \lstinline|graph_add_edge(..., SE)| (diagonale sud-est),  
+            \lstinline|graph_add_edge(..., SW)| (diagonale sud-ouest).
+          \item \textbf{Ligne centrale} ($\text{row}=m-1$) :  
+            uniquement \lstinline|graph_add_edge(..., E)|.
+          \item \textbf{Bas du pavage} ($m \le \text{row} < 2m-1$) :
+            \lstinline|graph_add_edge(..., E)| (horizontal),  
+            \lstinline|graph_add_edge(..., NE)| (diagonale nord-est),  
+            \lstinline|graph_add_edge(..., NW)| (diagonale nord-ouest).
+        \end{itemize}
+    \end{itemize}
+
+  \item[Cyclique] \texttt{graph\_create\_cyclic(m)} dérive du graphe triangulaire de base :
+    \begin{enumerate}
+      \item Appel de \lstinline|graph\_create\_triangular(m)| pour initialiser la structure.
+      \item Suppression des arêtes intérieures via \lstinline|manual_edge_set(..., NO\_EDGE)| :
+        \begin{itemize}
+          \item \emph{Première moitié} (lignes $2 \le \text{row} < m$) :  
+            suppression des arêtes horizontales et des diagonales nord-est/nord-ouest.
+          \item \emph{Seconde moitié} (lignes $m-1 \le \text{row} < 2m-3$) :  
+            suppression des arêtes horizontales et des diagonales sud-est/sud-ouest.
+        \end{itemize}
+      \item Nombre final d'arêtes attendu : $24m - 36$.
+    \end{enumerate}
+\end{description}
+
+\subsection*{Représentation avec GSL}
+Pendant la génération, les arêtes sont stockées dans une \texttt{gsl\_spmatrix\_uint}.  
+Une fois le graphe terminé, on appelle \texttt{graph\_ensure\_csr\_format(graph)} :
+    \begin{itemize}
+      \item Convertit la matrice GSL en format CSR (\texttt{row}, \texttt{col}, \texttt{val}).
+      \item Permet un parcours efficace en mémoire compacte.
+    \end{itemize}
+Le format CSR offre :
+    \begin{itemize}
+      \item Un accès rapide aux voisins d'un sommet.
+      \item Une coût réduit pour les graphes creux, ce qui est le cas pour notre projet.
+    \end{itemize}
+
+\subsection*{Interface d'abstraction du graphe}
+L'interface implémentée dans \texttt{gen\_graph.h} comprend :
+\begin{itemize}
+  \item \texttt{struct graph\_t *graph\_create(unsigned int num\_vertices)} : initialisation.
+  \item \texttt{void graph\_destroy(struct graph\_t* graph)} : libération de la mémoire utilisée par le graphe.
+  \item \texttt{bool graph\_add\_edge(struct graph\_t* graph, struct edge\_t edge, enum \\dir\_t dir)} : ajout d'une arête.
+  \item \texttt{void manual\_edge\_set(struct graph\_t* graph, struct edge\_t edge, enum\\ dir\_t replace)} : modification du type d'une arête.
+  \item \texttt{bool graph\_add\_objectives(struct graph\_t *graph, unsigned int max\_o-\\bjectives, unsigned int *tab)} : ajout d'objectifs.
+  \item \texttt{void graph\_ensure\_csr\_format(struct graph\_t*)} : passage en CSR.
+\end{itemize}
+
+\section{Communication et gestion de la partie}
+
+Le cœur du projet repose sur un serveur (\texttt{src/server.c}) qui fait touner la partie, 
+gère le plateau, les joueurs et l'enchaînement des coups. Le serveur fonctionne selon les étapes suivantes :
+
+\begin{enumerate}
+    \item \textbf{Chargement dynamique des joueurs} :\\
+    Les joueurs sont compilés en bibliothèques partagées (\texttt{.so}) et chargés dynamiquement au lancement du 
+    serveur grâce aux fonctions \texttt{dlopen} et \texttt{dlsym}. 
+    Cette façon de procéder permet de tester facilement différentes stratégies de jeu sans avoir à modifier le code du serveur..\\
+    Exemple d'appel :
+    \begin{lstlisting}[language=C]
+void *player1_handle = dlopen(argv[optind], RTLD_LAZY);
+void *player2_handle = dlopen(argv[optind + 1], RTLD_LAZY); \end{lstlisting}
+
+    \item \textbf{Initialisation de la partie et des joueurs} :\\
+    Le serveur initialise le plateau de jeu (génération du graphe, placement des objectifs), 
+    puis appelle la fonction \texttt{initialize} de chaque joueur pour leur transmettre leur couleur et une copie du plateau. 
+    Il définie aussi les positions de départ et des objectifs à ce moment-là.
+    \begin{lstlisting}[language=C]
+initialize_player(player1_handle, BLACK, graph_p1);
+initialize_player(player2_handle, WHITE, graph_p2); \end{lstlisting}
+    
+
+    \item \textbf{Boucle de jeu} :\\
+    La partie se déroule en alternant les coups entre les deux joueurs. À chaque tour, le serveur appelle la fonction \texttt{play} du 
+    joueur courant via \texttt{dlsym}, en lui passant le dernier coup joué. Le serveur vérifie ensuite la validité du coup (déplacement ou pose de mur), 
+    applique les modifications sur le plateau, et met à jour les positions des joueurs ainsi que l'état des objectifs atteints.
+    \begin{lstlisting}[language=C]
+struct move_t play_move(void *handle, struct move_t previous_move) {
+    struct move_t (*play)(const struct move_t);
+    play = (struct move_t(*)(const struct move_t))dlsym(handle, "play");
+    return play(previous_move);
+}\end{lstlisting}
+La boucle continue jusqu'à ce qu'un joueur ait atteint tous ses objectifs et soit revenu à sa base, 
+ou qu'une condition de fin soit déclenchée (nombre maximal de tours, coup illégal, etc.).
+
+    \item \textbf{Gestion des erreurs et validation des coups} :\\
+    Le serveur vérifie à chaque tour, grâce à la fonction \texttt{possible\_move}, la validité des coups (déplacement autorisé, mur légal, etc.) 
+    et gère les cas d'erreur (coup illégal, blocage, etc.) 
+    en affichant un message qui décrit la faute faite par le joueur et arrête la partie. 
+    La gestion des différents types d'erreurs se fait à l'aide d'un \texttt{enum} ayant la configuration suivante : \begin{lstlisting}[language=C]
+enum enum\_possible { 
+        MOVE\_ALLOWED = 1, ERROR\_NO\_TYPE\_MOVE = 0, 
+        ERROR\_INVALID\_VERTEX = -1, ERROR\_PLAYER\_DONT\_MOVE = -2, 
+        ERROR\_GOING\_OPPONENT = -3, ERROR\_WALL = -4 };
+    \end{lstlisting}
+    Chaque move est analysé de manière détaillée afin de détecter une potentielle erreur.
+    Le processus de vérification des coups se fait en plusieurs étapes. Dans le cas où le move est un déplacement (de type \texttt{MOVE}), 
+    la fonction renvoie : 
+    \begin{itemize}
+        \item \texttt{ERROR\_PLAYER\_DONT\_MOVE} si le player n'a pas bougé et renvoie la même position.
+        \item \texttt{ERROR\_GOING\_OPPONENT} si le player souhaite se rendre sur une position occupée par l'autre player.
+        \item \texttt{ERROR\_INVALID\_VERTEX} si le sommet visé n'est pas parmi la liste des sommets atteignables.
+        \item \texttt{MOVE\_ALLOWED} sinon.
+    \end{itemize}
+    Dans un premier temps, un test est fait sur les sommets adjaçents, si le déplacement fait partie des sommets adjaçents, le move est correct. 
+    Sinon, l'algorithme se doit de vérifier en détail le move.\\
+    Afin de pouvoir gérer les déplacements de 2 ou 3 sommets, il est impératif d'avoir un historique des coups de chaque joueur. 
+    Les tableaux de positions\\ \texttt{position\_player\_handle1} et \texttt{position\_player\_handle2} retracent l'entièreté des coups joués.\\
+    Le cœur de la vérification que propose \texttt{possible\_move} repose sur l'appel de la fonction \texttt{get\_reachable\_vertices}. 
+    Cette dernière va renvoyer un tableau de positions atteignables de 2 ou 3 de distance en fonction de sa position actuelle et 
+    de sa position précédente et vérifier que le déplacement fait bien partie de cet ensemble.\\
+    Pour finir, si le move est de type \texttt{WALL}, un parcours en largeur est effectué en partant du centre du graphe, 
+    si tous les sommets sont atteignables, le move est correct, sinon \texttt{ERROR\_WALL} est renvoyé.\\
+    (\textit{Si le move est de type NO\_TYPE, l'erreur ERROR\_NO\_TYPE\_MOVE est levée.})
+
+
+    \item \textbf{Fin de partie et nettoyage} :\\
+    Une fois la partie terminée, le serveur appelle la fonction \texttt{finalize} de chaque joueur pour libérer les ressources allouées, 
+    puis détruit le plateau et ferme les bibliothèques partagées.
+    \begin{lstlisting}[language=C]
+finalize\_player(player1_handle);
+finalize\_player(player2_handle);
+graph\_destroy(graph);
+dlclose(player1\_handle);
+dlclose(player2\_handle);\end{lstlisting}
+\end{enumerate}
+
+Cette architecture modulaire permet de bien séparer la logique du jeu (prise en charge par le serveur) 
+des stratégies des joueurs (contenues dans les bibliothèques dynamiques), 
+ce qui facilite l'ajout de nouveaux comportements ou de règles sans toucher au code principal.
+
+
+\section{Stratégies de jeu et intelligence artificielle}
+Dans le jeu Coursidor, il existe de nombreuses stratégies, plus ou moins efficaces pour gagner. Elles vont du joueur statique ne plaçant que des murs à l'étude de l'arbre de toutes les parties possibles pour déterminer un scénario 100\% gagnant. Dans l'implémentation des joueurs, cela se traduit par un ensemble de fonctions auxiliaires qui participent à la prise de décision.
+\subsection*{Structure d'un joueur}
+Les joueurs ont à leur disposition 4 fonctions de base leur permettant d'intéragir avec la partie et de prendre des décisions. Comme vu précédement, on retouve les fonctions :
+\begin{description}
+\item \texttt{initialize} : cette fonction sert à transmettre aux joueurs les informations nécessaires au début de la partie
+\item \texttt{play} : cette fonction est le cœur de décision du joueur et renvoie le coup joué par ce dernier
+\item \texttt{finalize} : cette fonction permet de terminer la partie et de libérer la mémoire utilisée par le joueur
+  \item \texttt{get\_player\_name} : cette fonction renvoie simplement une chaîne de caractères contenant le nom du joueur
+\end{description}
+
+On peut ici détailler un peu plus les fonctions \texttt{initialize}, \texttt{finalize} et \texttt{play} dont le comportement général reste le même quelque soit la stratégie.\\
+La fonction \texttt{initialize} a pour but de transmettre les informations de début de partie nécessaire au bon suivi de cette dernière par le joueur. Ces informations sont sauvegardées dans des variables globales, ce qui permet de les utiliser à n'importe quel endroit du code. On commence donc par récupérer la matrice d'adjacence du graphe qui sera ensuite utilisée par le joueur dans sa stratégie. Par la suite, la couleur du joueur et de son adversaire sont stockées. Enfin, on initialise les différentes variables globales spécifiques au joueur. Ces variables particulières peuvent faciliter le suivi de la partie, ou donner des informations nécessaires à la stratégie du joueur.\\
+Inversement, la fonction \texttt{finalize} assure la bonne libération de ces variables globales à la fin de la partie.\\
+Enfin, la fonction \texttt{play} renvoie au serveur le coup joué par le joueur en fonction du coup précédent de l'adversaire. Dans les exemples de nos joueurs, cette fonction s'organise en deux parties : l'actualisation des variables globales et la prise de décision. La première partie modifie tout d'abord le graphe du joueur pour que ce dernier représente la situation réelle de la partie. Dans le cas où l'adversaire place un mur, les deux arêtes concernées sont effacées du graphe. Dans le cas où l'adversaire s'est déplacé, on met à jour sa position dans la variable globale associée. La seconde partie de \texttt{play} définie directement la stratégie du joueur face au coup précédent. Elle varie donc énormément et peut faire appel à des fonctions auxiliaires. Elle renvoie donc le coup joué, dont la validité n'est pas assurée.
+
+Avec cette interface, les joueurs sont autonomes dans leur gestion de la partie et les décisions suivant leur stratégie respective.
+\subsection*{Exemple d'une stratégie naïve}
+Dans un premier temps, on peut prendre en exemple un joueur simple pour illustrer la structure du joueur. Une stratégie simple et naïve est celle du joueur aléatoire qui se déplace sans réel but sur le plateau de jeu. On désignera par la suite ce joueur par \texttt{random\_player}. Ce joueur comprend les variables suivantes :
+\begin{itemize}
+\item \texttt{graph\_player} : la copie du graphe de jeu
+\item visited\_objectives\_player : la liste de booléens indiquant les objectifs visités par le joueur
+\item visited\_objectives\_opponent : la liste de booléens indiquant les objectifs visités par l'adversaire
+\end{itemize}
+Ces variables sont donc initialisées dans la fonction \texttt{initialize} de \texttt{random\_player}.
+La fonction \texttt{play} de ce joueur reprend la structure expliquée ci-dessus mais varie au niveau du choix du coup joué. Celui-ci est un déplacement sur l'un des voisins du sommet actuel du joueur. La position est mise à jour, et la liste des objectifs visités par le joueur également dans la cas où le joueur se déplacerait sur l'un des objectifs. Pour éviter de renvoyer un coup illégal, le joueur vérifie si le sommet choisi ne correspond pas à la position actuelle de l'adversaire, auquel cas on retire un nouveau voisin.
+\texttt{random\_player} adopte un comportement aléatoire, mais respectant les règles du jeu. Il permet de tester le bon fonctionnement du jeu rapidement. Cette stratégie n'est cependant pas efficace et ne permet pas de remporter la victoire contre un adversaire essyant d'atteindre ses objectifs.
+\subsection*{Présentation de l'algorithme}
+Dans un second temps, nous avons établi une stratégie plus élaborée permettant au joueur de gagner face à des adversaires plus complexes. Cet algorithme évalue la situation actuelle du jeu, et en fonction du placement de chaque joueur par rapport aux objectifs, privilégie le déplacement du joueur ou le placement d'un mur. Le but est d'optimiser le parcours du joueur vers ses objectifs tout en entravant la progression de l'adervsaire. Cette algorithme repose fortement sur l'utilisation de l'algorithme A* pour déterminer les plus courts chemins entre des sommets.\\
+Pour son bon fonctionnement, l'algorithme nécessite certaines informations qui sont stockées sous la forme de variables globales : 
+\begin{itemize}
+\item la position de départ au lancement de la partie
+\item la liste des objectifs visités
+\item la position actuelle
+\item le chemin emprunté
+\item la longueur du chemin emprunté
+\item la direction du déplacement précédent
+  \item le nombre de murs placés
+\end{itemize}
+
+Execpté pour le nombre de murs placés, chacune de ces variables est commune au joueur et à son adversaire. Toutes ces variables sont initialisées par la fonction \texttt{initialize} et libérées par la fonction \texttt{finalize}. Elles servent donc à garder en mémoire le parcours du joueur d'un objectf à l'autre, mais également celui de l'adversaire. En effet, il est supposé qu'il se dirigera vers l'objectif le plus proche comme le joueur, suivant le plus court chemin. Ainsi, le parcours de chaque joueur est défini suit l'algorithme suivant :
+\begin{enumerate}
+\item trouver l'objectif le plus proche
+\item suivre le plus court chemin pour l'atteindre
+\item si le chemin est entravé, recommencer
+  \item une fois arrivé à destination, noter l'objectif comme atteint puis recommencer
+\end{enumerate}
+De cette manière, les joueurs se déplacent d'objectif en objectif en empruntant les plus courts chemins entre eux jusqu'à retourner à sa position d'origine.
+\subsubsection*{Choix du coup à jouer}
+Le cœur de cette stratégie réside dans la capacité à déterminer s'il est plus judicieux de placer un mur ou de se déplacer. L'évaluation se fait en comparant la distance séparant l'adversaire de son objectif le plus proche respectif avec ou sans mur. Après avoir mis à jour les informations modifiées par le coup précédent de l'adversaire. Chaque placement de mur potentiel est simulé d'une part pour vérifier que l'adversaire dispose toujours d'un chemin pour atteindre son objectif, d'autre part pour selectionner les arêtes du voisinnage dont l'impact sur le chemin adverse est maximal.\\
+Dans le cas où le mur ralentit le joueur d'uniquement 2 coup ou moins, on décide qu'il ne sera pas rentable de poser le mur car cela nous coûte aussi un tour de jeu. Si aucune arête du voisinage ne peut acceuillir le mur, le joueur se déplace, faute d'avoir trouver un emplacement viable. \\
+Dans le cas où le joueur se déplace, il suit le chemin le plus court vers son objectif, en prenant en compte la direction de son déplacement précédent et prenant garde à ne pas se déplacer sur le même sommet où se trouve l'adversaire.\\
+\subsubsection*{A* et heuristique}
+L'algorithme A* est utilisé de nombreuses fois dans cette stratégie. Ce dernier renvoie une liste de sommets, dont la longueur est indiquée dans le premier élément de cette liste. \\
+A* nécessite une heuristique sur le graphe du jeu pour trouver le plus court chemin efficacement. Nous avons décidé de se servir des coordonnées hexagonales de chaque sommet. On peut alors calculer la distance à "vol d'oiseau" par rapport au point de départ de l'algorithme, une métrique simple qui donne une bonne approximation de la distance à parcourir. Cependant, elle ne prend pas en compte les murs placés ainsi que les trous dans le plateau, par exemple dans le cas du graphe troué. Elle est tout de même admissible et A* renvoie alors toujours le chemin le plus court, si ce dernier existe.\\
+\subsubsection*{Choix de A*}
+Le choix de l'algorithme pour déterminer le plus court chemin s'est fait entre Dijsktra et A*. A l'origine, Dijkstra était favori pour calculer le plus court chemin vers tous les objectifs en même temps. Mais par la suite, nous avons eu besoin de chercher des chemins vers des cibles uniques. Le choix de A* est alors devenu plus judicieux. Il offre plus de flexibilité dans son utilisation. En effet, les chemins trouvées par les algorithmes étant régulièrement mis à épreuve à cause des obstacles, ils doivent être mis à jour. Or il est bien moins coûteux de faire un A* qu'un Dijkstra.
+\section{Test/Validation}
+
+Au cours d'un projet, la création de tests utiles et pertinents est impérative pour son bon développement. C'est pourquoi nous avons fait particulièrement attention à cela.
+Chaque fonction que l'on pourrait qualifier de secondaire a été soumise à de nombreux tests unitaires, reflétant au maximum les différentes possibilités du jeu.
+2 aspects du jeu ont été testés en profondeur :
+\begin{itemize}
+\item Les fonctions relatives au \textbf{comportement du joueur} testées dans \texttt{test\_player.c};
+\item Les fonctions relatives au traitement du \textbf{graphe} testées dans \texttt{test\_graph.c};
+\end{itemize}
+
+Ces fonctions de test sont appelées dans le fichier \texttt{test\_main.c} et compilées et exécutées via la commande \texttt{make test}.
+Ces tests nous ont permis de corriger un certain nombre d'oubli ou de faute d'inattention dans les fonctions.\\
+
+Néanmoins, au niveau des tests des fonctions principales comme la fonction \texttt{play}, il est logiquement impossible de tester un nombre suffisamment important de parties différentes pour détecter toutes les erreurs potentielles. Ce faisant, nous avons opté pour un seul test simple, vérifiant un cas basique et nous sommes reportés sur la vérification du serveur pour faire des tests.
+À la fin du développement, nous nous sommes retrouvés face à une impasse quand le joueur se comportait de manière inattendue sur la ladder. Ainsi, grâce à la commande \texttt{make exec}, nous avons pu faire s'affronter notre joueur \textit{random} et notre joueur \textit{A star}.
+Cela nous a permis, en faisant varier la taille du graphe, le nombre d'objectifs et leurs positions, de découvrir des cas que nos tests ne prenaient pas en compte.\\
+
+Après cela, nous avons rajouté un maximum de logs intéressants comme les chemins trouvés par A star ou des indicateurs des choix que faisaient les fonctions \texttt{play}, \texttt{fill\_path} ou encore \texttt{follow path}. En étudiant ces logs, nous avons pu mieux nous rendre compte des problèmes, bien que parfois, les logs n'étaient pas suffisants et nous devions revoir consciencieusement l'entièreté d'un algorithme.
+
+Enfin, pour valider complètement notre code et s'assurer qu'aucune erreur ne nous aurait échappé, nous avons créé 1 script bash exécutant un grand nombre de fois \texttt{make exec} permettant :
+\begin{itemize} 
+\item de trouver les moves \textbf{illégaux} à l'aide d'une commande \texttt{grep};
+\item de trouver les erreurs mémoire grâce à l'outil \textit{Valgrind};
+\end{itemize}
+
+Nous avons également utilisé l'outil \textit{GDB} quand nous faisions face à des \textit{segmentation fault} afin de retracer la pile d'appel avec un \texttt{backtrace}.
+
+\section{Améliorations possibles}
+
+Au cours de notre projet, nous avons eu du mal à développer une stratégie optimale de jeu, ralenti par la gestion de bugs et erreurs d'implémentation. Néanmoins, nous avons tenté (sans avoir eu le temps de terminer) de mettre en place une stratégie de jeu plus poussé que celle que nous avions. En effet, à la place de la stratégie gloutonne consistant à aller à l'objectif non visité le plus proche, nous avons tenté de développer un algorithme nommé \textbf{Held-Karp}. \\
+
+\textbf{Entrée :} Un ensemble de sommet relié par des chemins pondérés
+
+\textbf{Sortie :} Une solution optimale au problème du voyageur de commerce (\textit{Travelling Salesman Problem}). \\
+
+L'algorithme permet de trouver l'ordre optimal permetttant le plus court chemin de parcours des objectifs exactement une fois chacun, puis de revenir au sommet de départ.
+Held-Karp utilise la programmation dynamique sur un \textbf{bitmask} où chaque bit indique si le sommet correspondant a été visité (1) ou non (0). \\
+
+Au lieu d'examiner toutes les permutations possibles des objectifs, il construit des solutions sur des sous-ensembles de sommet. Puis, il réutilise ces solutions de sous-chemins déjà optimisé afin de construire petit à petit un chemin optimal avec tout les sommets.
+En stockant les résultats dans un tableau, il évite de recalculer plusieurs fois la même chose, suivant la logique de mémoïsation. Ce tableau de forme \texttt{dp[S][j]} (S : un sous ensemble de sommet représenté par un bitmask, j : le sommet d'arrivée) est de taille $n \times 2^n$ (complexité spatiale), ce qui est conséquent. 
+Quant à la complexité temporelle, Held-Karp visite $2^n$ sous-ensemble possible, pour chaque sous-ensemble, il calcule le coût pour terminer en chaque objectifs. Enfin, pour remplir \texttt{dp[S][j]}, on regarde tout les sommets de S différent de j (n-1 sommets), d'où l'on aurait pu venir. Soit une complexité temporelle totale en $O(n² \times 2^n)$. Sans la réutilisation des résultats, il aurait fallu calculer les résultats pour toute les permutations ($n!$). Cela permet à l'algorithme d'être utilisable jusqu'à un peu plus de 15 objectifs contre 10-12.\\
+
+La complexité est exponentielle. Cependant, elle permet d'améliorer grandement les performances de notre joueur. De plus, elle permet de limiter le nombre d'appels à A* car nous n'avons plus besoin de calculer les chemins à chaque objectifs pour trouver le meilleur à chaque fois qu'on doit re-remplir un chemin. Seul le tableau contenant les distances des chemins entre les objectifs utilisés par Held-Karp est rempli par A star. \\
+
+Dans le cas où nous aurions remarqué un plus grand nombre d'objectifs, ce qui aurait rendu impossible l'utilisation de Held-Karp, nous aurions plutôt opté pour une stratégie utilisant des algorithmes se rapprochant de la solution optimale d'un TSP comme un \textbf{2-opt} ou \textbf{3-opt}.
+\section{Conclusion}
+Dans ce projet, nous avons développé une implémentation du jeu corsidor en 2 parties distinctes : serveur et joueur.\\
+La bibliothèquee \texttt{dlopen} permet d'utiliser du code C de manière dynamique pour les parties. Cela signifie que l'on peut obtenir une éxecution différente avec une unique compilation des fichiers. Cela casse l'aspect statique du langage C et offre plus de liberté pour le gestion des parties et de différents joueurs simultanément. De plus, cette bibliotèque permet à l'interface des joueurs d'être plus abstraite car totalement indépendante de l'implémentation.\\
+Du côté des joueurs, la recherche de la stratégie est une partie importante du développement. Nous avons pu voir différents algorithmes, plus ou moins performants.\\
+De plus, ce projet comprend un nombre important de fonctions auxiliaires dont le comportement doit être assuré. Pour cela, les tests de ces fonctions ainsi que leur fiabilité sont un point qui demande une certaine réflexion et méthode. La couverture de ces tests a notament permis de révéler certains comportements imprévus ou non maîtrisés de parties du code.\\
+
+\section{Bibliographie / Référence}
+
+Documentation GSL
+
+Documentation sur dlopen, getopt, etc.
+
+Travaux de L. Glendenning (2005) et P.M.C. Mertens (2006) (dit dans le sujet)
+
+
+\newpage
+
+
+\end{document}
