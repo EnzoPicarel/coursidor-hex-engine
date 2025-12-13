@@ -9,9 +9,9 @@ COVERAGE_FLAGS = --coverage -fprofile-abs-path
 SANITIZE_FLAGS = -fsanitize=address -fno-omit-frame-pointer
 
 
-all: build build_tests install
+all: build test
 
-build: graph server client client2
+build: server client client2
 	@echo "Building all components..."
 
 server: src/server.c gen_graph.o src/player.h src/move.h
@@ -71,9 +71,10 @@ test: build_tests install
 	@echo "Executing alltests"
 	@./install/alltests;
 
-install: server client client2 build_tests
+install: build build_tests
 	@echo "Installing..."
-	@mv server *.so alltests install
+	@mkdir -p install
+	@cp server *.so alltests install/
 
 coverage: build_tests
 	@echo "==> Exécution des tests"
@@ -89,6 +90,7 @@ clean:
 	@echo "Cleaning up..."
 	@rm -f *~ src/*~ test/*~ 
 	@rm -f *.o install/* alltests *.so server graph *.png *.dot
+	@rm -rf install
 	@find . \( -name "*.gcno" -o -name "*.gcda" -o -name "*.gcov" -o -name "*.gch" \) -exec rm -f {} \;
 
 clang:
@@ -100,5 +102,5 @@ rapport:
 	mv main.* report/
 	evince report/main.pdf &
 
-
+.PHONY: all build server client client2 client3 install test clean exec build_tests coverage clang rapport
 .PHONY: all build server client client2 install test clean graph exec build_tests coverage clang
