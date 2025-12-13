@@ -175,7 +175,7 @@ void get_reachable_vertices(struct graph_t *graph, vertex_t current_pos, enum di
     unsigned int count;
     unsigned int *neighbors = graph_get_neighbors(graph, current_pos, &count);
 
-    // Premier mouvement ou pas de direction précédente
+    // First move or no previous direction
     if (prev_dir == NO_EDGE)
     {
         for (unsigned int i = 0; i < count; i++)
@@ -190,10 +190,10 @@ void get_reachable_vertices(struct graph_t *graph, vertex_t current_pos, enum di
         return;
     }
 
-    // Obtenir les directions à 30°
+    // Get directions at 30 degrees
     enum dir_t *dirs_30 = get_direction_30(prev_dir);
 
-    // Parcourir tous les voisins du premier niveau
+    // Iterate over all first-level neighbors
     for (unsigned int i = 0; i < count; i++)
     {
         enum dir_t dir = gsl_spmatrix_uint_get(graph->t, current_pos, neighbors[i]);
@@ -202,16 +202,16 @@ void get_reachable_vertices(struct graph_t *graph, vertex_t current_pos, enum di
 
         vertex_t next = neighbors[i];
 
-        // Si même direction
+        // If same direction as previous move
         if (dir == prev_dir)
         {
-            // Ajouter le voisin direct
+            // Add the direct neighbor
             if (!is_in_array(reachable, *num_reachable, next))
             {
                 reachable[(*num_reachable)++] = next;
             }
 
-            // Explorer jusqu'à 2 cases supplémentaires dans la même direction
+            // Explore up to two additional steps in the same direction
             vertex_t curr = next;
             for (int step = 0; step < 2 && curr != (vertex_t)-1; step++)
             {
@@ -239,16 +239,16 @@ void get_reachable_vertices(struct graph_t *graph, vertex_t current_pos, enum di
                     break;
             }
         }
-        // Si direction à 30°
+        // If direction is 30 degrees offset
         else if (dir == dirs_30[0] || dir == dirs_30[1])
         {
-            // Ajouter le voisin direct
+            // Add the direct neighbor
             if (!is_in_array(reachable, *num_reachable, next))
             {
                 reachable[(*num_reachable)++] = next;
             }
 
-            // Explorer une case supplémentaire dans la direction à 30°
+            // Explore one additional step in the 30-degree direction
             vertex_t curr = next;
             unsigned int next_count;
             unsigned int *next_neighbors = graph_get_neighbors(graph, curr, &next_count);
@@ -283,7 +283,7 @@ enum dir_t get_direction_between_vertices(struct graph_t *graph, vertex_t start,
     enum dir_t *first_dir = malloc(graph->num_vertices * sizeof(enum dir_t));
     int front = 0, rear = 0;
 
-    // Initialiser la file avec le sommet de intiale qui est le centre du graphe
+    // Initialize queue with the starting vertex (graph center)
     queue[rear++] = start;
     visited[start] = 1;
     first_dir[start] = NO_EDGE;
@@ -294,14 +294,14 @@ enum dir_t get_direction_between_vertices(struct graph_t *graph, vertex_t start,
     {
         vertex_t current = queue[front++];
 
-        // Si on a trouvé la destination
+        // Destination found
         if (current == end)
         {
             result = first_dir[current];
             break;
         }
 
-        // Explorer les voisins
+        // Explore neighbors
         unsigned int count;
         unsigned int *neighbors = graph_get_neighbors(graph, current, &count);
 
@@ -315,7 +315,7 @@ enum dir_t get_direction_between_vertices(struct graph_t *graph, vertex_t start,
                 {
                     queue[rear++] = next;
                     visited[next] = 1;
-                    // Si c'est le premier pas, sauvegarder la direction
+                    // On the first step, save the direction taken
                     first_dir[next] = (current == start) ? dir : first_dir[current];
                 }
             }
@@ -337,7 +337,7 @@ static int can_reach_all_vertices(struct graph_t *graph, vertex_t start)
     int front = 0, rear = 0;
     unsigned int count = 0;
 
-    // Initialisation file pour parcours largeur
+    // Initialize queue for breadth-first traversal
     queue[rear++] = start;
     visited[start] = 1;
     count++;
@@ -399,7 +399,7 @@ int possible_move(struct graph_t *graph, struct move_t move, struct move_t *posi
             return ERROR_GOING_OPPONENT;
         }
 
-        // Utilisez la fonction get_direction_between_vertices pour obtenir la direction
+        // Use get_direction_between_vertices to obtain the direction
         unsigned int c;
         unsigned int *neighbor1 = graph_get_neighbors(graph, position_player[i1].m, &c);
         for (unsigned int i = 0; i < c; i++)
@@ -412,8 +412,7 @@ int possible_move(struct graph_t *graph, struct move_t move, struct move_t *posi
         }
         free(neighbor1);
         if (i1 == 0)
-            return ERROR_INVALID_VERTEX; // cas ou c'est le premier move et que la destination n'est
-                                         // pas dans les sommets adjaçants
+            return ERROR_INVALID_VERTEX; // first move and destination not in adjacent vertices
 
         vertex_t curr = position_player[i1].m;
         vertex_t prev = position_player[i1 - 1].m;

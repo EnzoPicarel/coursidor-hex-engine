@@ -1,62 +1,62 @@
 # Coursidor
 
-Coursidor est une variante du jeu de Quoridor.  
-Deux joueurs (BLACK/0 et WHITE/1) parcourent un plateau défini par un graphe à pavage triangulaire ou cyclique, doivent valider un ensemble d’objectifs (bases) dans l’ordre de leur choix, puis revenir à leur point de départ. À chaque tour, un joueur peut déplacer son pion le long d’une arête valide ou poser un mur pour ralentir l’adversaire sans le bloquer complètement.
+Coursidor is a variant of the Quoridor board game.  
+Two players (BLACK/0 and WHITE/1) traverse a board defined by a graph with triangular or cyclic tiling, must validate a set of objectives (bases) in the order of their choice, then return to their starting point. Each turn, a player can move their piece along a valid edge or place a wall to slow down the opponent without completely blocking them.
 
 ---
 
-## Sujet du projet
+## Project Subject
 
-- Page du sujet :  
+- Subject page:  
     <https://www.labri.fr/perso/renault/working/teaching/projets/2024-25-S6-C-Coursidor.php>
-- Page du projet sur Thor :  
+- Project page on Thor:  
     <https://thor.enseirb-matmeca.fr/ruby/projects/pr105-coursidor>
 
 ## Compilation
 
-Compile le serveur et les bibliothèques joueurs :
+Compile the server and player libraries:
 ```bash
 make build GSL_PATH=$GSL_PATH
 ```
 
-Compile les tests unitaires :
+Compile unit tests:
 ```bash
 make build_tests GSL_PATH=$GSL_PATH
 ```
 
-## Installation 
+## Installation
 
 ```bash
 make install
 ```
 
-Après make install, le répertoire install/ contiendra :
+After make install, the install/ directory will contain:
 
-* server – l’exécutable du serveur
-* alltests – l’exécutable de tous les tests
-* *.so – les bibliothèques clientes
+* server – the server executable
+* alltests – all tests executable
+* *.so – client libraries
 
-## Exécution
+## Execution
 
-Pour une exécution rapide :
+For quick execution:
 ```bash
 make exec
 ```
 
-### Sinon :
+### Otherwise:
 
-#### Syntaxe :
+#### Syntax:
 
 ```bash
-./install/server [-m width] [-t type] [-M max round] [-O num objectives] <player1.so> <player2.so>
+./install/server [-m width] [-t type] [-M max_rounds] [-O num_objectives] <player1.so> <player2.so>
 ```
 
-#### Exemple :
+#### Example:
 
-Graphe triangulaire de taille 5, 50 tours et 3 objectifs
+Triangular graph of size 5, 50 rounds and 3 objectives
 
 ```bash
-./install/server -m 5 -t T -M 50 -o 3 install/player1.so install/player2.so
+./install/server -m 5 -t T -M 50 -O 3 install/astar_player.so install/random_player.so
 ```
 
 ## Tests
@@ -65,23 +65,23 @@ Graphe triangulaire de taille 5, 50 tours et 3 objectifs
 make test
 ```
 
-## Règles du jeu
+## Game Rules
 
-* Objectif : chaque joueur (BLACK=0, WHITE=1) doit visiter toutes les bases (objectifs) puis revenir à sa case de départ.
-* Déplacement (MOVE) :
-    * par défaut, déplacement sur un sommet adjacent.
-    * si même direction que le coup précédent : jusqu’à 3 cases.
-    * si à 30° : jusqu’à 2 cases.
-    * saut par-dessus l’adversaire possible si adjacent.
-* Placement de mur (WALL) :
-    * deux arêtes consécutives autour d’un sommet.
-    * retire ces arêtes du graphe.
-    * ne peut pas bloquer totalement un joueur (doit toujours garder un chemin pour atteindre objectifs et base).
-* Conditions de fin :
-    * un joueur joue un coup invalide → il perd immédiatement.
-    * un joueur valide tous les objectifs et revient à sa base → il gagne.
-    * nombre maximal de tours atteint → match nul.
+* Objective: each player (BLACK=0, WHITE=1) must visit all bases (objectives) then return to their starting square.
+* Movement (MOVE):
+    * by default, move to an adjacent vertex.
+    * if same direction as previous move: up to 3 vertices.
+    * if at 30°: up to 2 vertices.
+    * jump over opponent possible if adjacent.
+* Wall placement (WALL):
+    * two consecutive edges around a vertex.
+    * removes these edges from the graph.
+    * cannot completely block a player (must always keep a path to reach objectives and base).
+* End conditions:
+    * a player makes an invalid move → loses immediately.
+    * a player validates all objectives and returns to their base → wins.
+    * maximum number of rounds reached → draw.
 
-## Auteurs
+## Authors
 
 Enzo Picarel, Raphaël Bely, Arno Donias, Thibault Abeille

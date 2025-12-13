@@ -8,14 +8,16 @@
 #define INF 1000000
 #endif
 
-void build_index_to_hex_table_test() {
+void build_index_to_hex_table_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create(7);
 
     struct edge_t edge;
 
-    for (unsigned int dir = FIRST_DIR; dir < NUM_DIRS + 1; dir++) {
+    for (unsigned int dir = FIRST_DIR; dir < NUM_DIRS + 1; dir++)
+    {
         edge = (struct edge_t){0, dir};
         graph_add_edge(g, edge, dir);
         edge = (struct edge_t){dir, (dir + 1) % NUM_DIRS};
@@ -25,7 +27,7 @@ void build_index_to_hex_table_test() {
     graph_ensure_csr_format(g);
     initialize(0, g);
 
-    struct hexa_pos *table = malloc(sizeof(struct hexa_pos) * 7);
+    struct hex_pos *table = malloc(sizeof(struct hex_pos) * 7);
     build_index_to_hex_table(table, 2);
     assert(table[0].q == 0 && table[0].r == -1);
     assert(table[1].q == 1 && table[1].r == -1);
@@ -40,7 +42,8 @@ void build_index_to_hex_table_test() {
     printf("OK\n");
 }
 
-void hexagonal_distance_test() {
+void hexagonal_distance_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create(7);
@@ -86,7 +89,7 @@ void hexagonal_distance_test() {
     graph_ensure_csr_format(g);
     initialize(0, g);
 
-    struct hexa_pos *table = malloc(sizeof(struct hexa_pos) * 7);
+    struct hex_pos *table = malloc(sizeof(struct hex_pos) * 7);
     build_index_to_hex_table(table, 2);
 
     assert(hexagonal_distance(0, 3, table) == 1);
@@ -107,7 +110,8 @@ void hexagonal_distance_test() {
     printf("OK\n");
 }
 
-void get_player_name_test() {
+void get_player_name_test()
+{
     printf("Test %s ", __func__);
 
     const char *c = get_player_name();
@@ -122,10 +126,11 @@ void initialize_test() {
 };
 */
 
-void play_test() {
+void play_test()
+{
     printf("Test %s ", __func__);
 
-    // Un premier test sans joueur adverse
+    // A first test without an opposing player
     struct graph_t *g = graph_create_triangular(4);
     unsigned int tab_obj[4] = {3, 33, 24, 12};
     graph_add_objectives(g, 4, tab_obj);
@@ -136,7 +141,8 @@ void play_test() {
     initialize(0, g);
 
     const struct move_t previous_move = {.c = 1, .t = 0, .m = 0, .e = {{0, 0}, {0, 0}}};
-    int is_expected_move(const struct move_t expected_move, struct move_t move) {
+    int is_expected_move(const struct move_t expected_move, struct move_t move)
+    {
         return (move.c == expected_move.c && move.t == expected_move.t &&
                 move.m == expected_move.m && move.e[0].to == expected_move.e[0].to &&
                 move.e[0].fr == expected_move.e[0].fr && move.e[1].to == expected_move.e[1].to &&
@@ -144,8 +150,9 @@ void play_test() {
     }
 
     const struct move_t expected_move1 = {.c = 0, .t = 2, .m = 22, .e = {{0, 0}, {0, 0}}};
-    if (is_expected_move(expected_move1, previous_move)) {
-        printf("test pour compiler sans warning\n");
+    if (is_expected_move(expected_move1, previous_move))
+    {
+        printf("test to compile without warning\n");
     }
     struct move_t move_test = play(previous_move);
 
@@ -169,11 +176,13 @@ void play_test() {
     struct move_t move = play(previous_move);
     assert(move.t == 2);
     assert(move.m == 2 || move.m == 7);
-    if (move.m == 2) {
+    if (move.m == 2)
+    {
         move = play(previous_move);
         assert(move.t == 2);
         assert(move.m == 0 || move.m == 11 || move.m == 6);
-        if (move.m == 0) {
+        if (move.m == 0)
+        {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 9 || move.m == 4);
@@ -181,7 +190,9 @@ void play_test() {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 15);
-        } else if (move.m == 11 || move.m == 6) {
+        }
+        else if (move.m == 11 || move.m == 6)
+        {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 17);
@@ -190,12 +201,15 @@ void play_test() {
             assert(move.t == 2);
             assert(move.m == 15);
         }
-    } else if (move.m == 7) {
+    }
+    else if (move.m == 7)
+    {
         move = play(previous_move);
         assert(move.t == 2);
         assert(move.m == 18 || move.m == 6 || move.m == 5);
 
-        if (move.m == 18) {
+        if (move.m == 18)
+        {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 16);
@@ -203,7 +217,9 @@ void play_test() {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 15);
-        } else if (move.m == 7) {
+        }
+        else if (move.m == 7)
+        {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 17);
@@ -211,7 +227,9 @@ void play_test() {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 15);
-        } else if (move.m == 6) {
+        }
+        else if (move.m == 6)
+        {
             move = play(previous_move);
             assert(move.t == 2);
             assert(move.m == 16 || move.m == 4);
@@ -225,7 +243,8 @@ void play_test() {
     printf("OK\n");
 }
 
-void held_karp_test() {
+void held_karp_test()
+{
     printf("Test %s", __func__);
 }
 
@@ -235,7 +254,8 @@ void finalize_test() {
 };
 */
 
-void cmp_length_test() {
+void cmp_length_test()
+{
     printf("Test %s ", __func__);
     unsigned int a = 3;
     unsigned int b = 4;
@@ -248,15 +268,17 @@ void cmp_length_test() {
     printf("OK\n");
 };
 
-void extractMin_test() {
+void extract_min_test()
+{
     printf("Test %s ", __func__);
-    unsigned int *couleur = malloc(10 * sizeof(unsigned int));
+    unsigned int *visit_state = malloc(10 * sizeof(unsigned int));
     unsigned int *d = malloc(10 * sizeof(unsigned int));
     unsigned int *h = malloc(10 * sizeof(unsigned int));
     int n = 10;
 
-    for (int i = 0; i < n; i++) {
-        couleur[i] = 1;
+    for (int i = 0; i < n; i++)
+    {
+        visit_state[i] = 1;
         h[i] = 0;
     }
     d[0] = 6;
@@ -272,47 +294,48 @@ void extractMin_test() {
 
     unsigned int r;
 
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 3 && couleur[3] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 4 && couleur[4] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 5 && couleur[5] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 2 && couleur[2] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 1 && couleur[1] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 9 && couleur[9] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 0 && couleur[0] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 7 && couleur[7] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 6 && couleur[6] == 2);
-    r = extractMin(couleur, d, h, n);
-    couleur[r] = 2;
-    assert(r == 8 && couleur[8] == 2);
-    free(couleur);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 3 && visit_state[3] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 4 && visit_state[4] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 5 && visit_state[5] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 2 && visit_state[2] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 1 && visit_state[1] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 9 && visit_state[9] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 0 && visit_state[0] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 7 && visit_state[7] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 6 && visit_state[6] == 2);
+    r = extract_min(visit_state, d, h, n);
+    visit_state[r] = 2;
+    assert(r == 8 && visit_state[8] == 2);
+    free(visit_state);
     free(d);
     free(h);
     printf("OK\n");
 };
 
-void release_test() {
+void relax_test()
+{
     printf("Test %s ", __func__);
     unsigned int *d = malloc(5 * sizeof(unsigned int));
     unsigned int *parent = malloc(5 * sizeof(unsigned int));
-    unsigned int *couleur = malloc(5 * sizeof(unsigned int));
+    unsigned int *visit_state = malloc(5 * sizeof(unsigned int));
 
     d[0] = 1;
     d[1] = 2;
@@ -326,15 +349,15 @@ void release_test() {
     parent[3] = 1;
     parent[4] = 3;
 
-    couleur[0] = 2;
-    couleur[1] = 2;
-    couleur[2] = 0;
-    couleur[3] = 0;
-    couleur[4] = 1;
+    visit_state[0] = 2;
+    visit_state[1] = 2;
+    visit_state[2] = 0;
+    visit_state[3] = 0;
+    visit_state[4] = 1;
 
-    release(4, 3, 2, d, parent, couleur);
+    relax(4, 3, 2, d, parent, visit_state);
 
-    assert(couleur[3] = 1);
+    assert(visit_state[3] = 1);
 
     assert(parent[3] = 4);
 
@@ -343,17 +366,19 @@ void release_test() {
 
     free(d);
     free(parent);
-    free(couleur);
+    free(visit_state);
     printf("OK\n");
 };
 
-void is_in_dir_test() {
+void is_in_direction_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create(9);
     struct edge_t edge;
 
-    for (int i = 1; i < 7; i++) {
+    for (int i = 1; i < 7; i++)
+    {
         edge = (struct edge_t){0, i};
         graph_add_edge(g, edge, (unsigned int)i);
     }
@@ -368,28 +393,31 @@ void is_in_dir_test() {
 
     initialize(0, g);
 
-    for (unsigned int d = 1; d < 7; d++) {
-        assert(is_in_dir(0, d, d, 3) != 0);
-        assert(is_in_dir(0, d, (d + 1) % NUM_DIRS, 3) == 0);
+    for (unsigned int d = 1; d < 7; d++)
+    {
+        assert(is_in_direction(0, d, d, 3) != 0);
+        assert(is_in_direction(0, d, (d + 1) % NUM_DIRS, 3) == 0);
     }
 
-    assert(is_in_dir(0, 7, 1, 3) != 0);
-    assert(is_in_dir(0, 7, 2, 3) == 0);
+    assert(is_in_direction(0, 7, 1, 3) != 0);
+    assert(is_in_direction(0, 7, 2, 3) == 0);
 
-    assert(is_in_dir(0, 8, 1, 3) != 0);
-    assert(is_in_dir(0, 8, 2, 3) == 0);
+    assert(is_in_direction(0, 8, 1, 3) != 0);
+    assert(is_in_direction(0, 8, 2, 3) == 0);
 
     finalize();
     printf("OK\n");
 }
 
-void direction_test() {
+void get_direction_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create(9);
     struct edge_t edge;
 
-    for (int i = 1; i < 7; i++) {
+    for (int i = 1; i < 7; i++)
+    {
         edge = (struct edge_t){0, i};
         graph_add_edge(g, edge, (unsigned int)i);
     }
@@ -404,20 +432,22 @@ void direction_test() {
 
     initialize(0, g);
 
-    for (unsigned int d = 1; d < 7; d++) {
-        assert(direction(0, d) == d);
+    for (unsigned int d = 1; d < 7; d++)
+    {
+        assert(get_direction(0, d) == d);
     }
 
-    assert(direction(0, 7) == 1);
+    assert(get_direction(0, 7) == 1);
 
-    assert(direction(0, 8) == 1);
+    assert(get_direction(0, 8) == 1);
 
     finalize();
 
     printf("OK\n");
 }
 
-void A_star_test() {
+void a_star_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create(10);
@@ -471,13 +501,13 @@ void A_star_test() {
     graph_add_edge(g, edge, 3);
 
     /*
-    Graphe:
+    Graph layout:
 
-        2	     3
+        2          3
 
-    1       0   	4   	7   	 8
+    1       0      4      7       8
 
-         6	     5
+         6          5
 
       9
 
@@ -486,8 +516,8 @@ void A_star_test() {
     graph_ensure_csr_format(g);
     initialize(0, g);
 
-    unsigned int *p1 = A_star(0, 8, 0); // pas de direction précédente précisé
-    // chemin attendu : 0, 4, 8
+    unsigned int *p1 = a_star(0, 8, 0); // no previous direction specified
+    // expected path: 0, 4, 8
 
     printf("verif : %u %u %u %u\n", p1[0], p1[1], p1[2], p1[3]);
 
@@ -498,8 +528,8 @@ void A_star_test() {
 
     free(p1);
 
-    unsigned int *p2 = A_star(0, 8, 3); // en venant de 1, direction prise : EST = 3
-    // chemin attendu : 0, 8
+    unsigned int *p2 = a_star(0, 8, 3); // coming from 1, direction taken: EAST = 3
+    // expected path: 0, 8
 
     printf("verif : %u %u %u %u\n", p2[0], p2[1], p2[2], p2[3]);
     assert(p2[0] == 2);
@@ -508,16 +538,16 @@ void A_star_test() {
 
     free(p2);
 
-    unsigned int *p3 = A_star(0, 9, 6); // en venant de 4, direction prise : WEST = 6
-    // chemin attendu : 0, 9
+    unsigned int *p3 = a_star(0, 9, 6); // coming from 4, direction taken: WEST = 6
+    // expected path: 0, 9
     assert(p3[0] == 2);
     assert(p3[1] == 9);
     assert(p3[2] == 0);
 
     free(p3);
 
-    unsigned int *p4 = A_star(2, 9, 0); // pas de direction précédente précisé
-    // chemin attendu : 2, 0, 9
+    unsigned int *p4 = a_star(2, 9, 0); // no previous direction specified
+    // expected path: 2, 0, 9
 
     assert(p4[0] == 3);
     assert(p4[1] == 9);
@@ -526,8 +556,8 @@ void A_star_test() {
 
     free(p4);
 
-    unsigned int *p5 = A_star(1, 9, 6); // en venant de 0, direction prise : WEST = 6
-    // chemin attendu : 1, 0, 6, 9
+    unsigned int *p5 = a_star(1, 9, 6); // coming from 0, direction taken: WEST = 6
+    // expected path: 1, 0, 6, 9
 
     assert(p5[0] == 3);
     assert(p5[1] == 9);
@@ -540,7 +570,8 @@ void A_star_test() {
     printf("OK\n");
 };
 
-void max_length_move_test() {
+void max_length_move_test()
+{
     printf("Test %s ", __func__);
     enum dir_t d1 = 1;
     enum dir_t d2 = 2;
@@ -548,73 +579,75 @@ void max_length_move_test() {
     enum dir_t d4 = 4;
     enum dir_t d5 = 5;
     enum dir_t d6 = 6;
-    assert(max_lentgh_move(d1, d1) == 3);
-    assert(max_lentgh_move(d1, d2) == 2);
-    assert(max_lentgh_move(d1, d3) == 1);
-    assert(max_lentgh_move(d1, d4) == 1);
-    assert(max_lentgh_move(d1, d5) == 1);
-    assert(max_lentgh_move(d1, d6) == 2);
+    assert(max_length_move(d1, d1) == 3);
+    assert(max_length_move(d1, d2) == 2);
+    assert(max_length_move(d1, d3) == 1);
+    assert(max_length_move(d1, d4) == 1);
+    assert(max_length_move(d1, d5) == 1);
+    assert(max_length_move(d1, d6) == 2);
 
-    assert(max_lentgh_move(d2, d1) == 2);
-    assert(max_lentgh_move(d2, d2) == 3);
-    assert(max_lentgh_move(d2, d3) == 2);
-    assert(max_lentgh_move(d2, d4) == 1);
-    assert(max_lentgh_move(d2, d5) == 1);
-    assert(max_lentgh_move(d2, d6) == 1);
+    assert(max_length_move(d2, d1) == 2);
+    assert(max_length_move(d2, d2) == 3);
+    assert(max_length_move(d2, d3) == 2);
+    assert(max_length_move(d2, d4) == 1);
+    assert(max_length_move(d2, d5) == 1);
+    assert(max_length_move(d2, d6) == 1);
 
-    assert(max_lentgh_move(d3, d1) == 1);
-    assert(max_lentgh_move(d3, d2) == 2);
-    assert(max_lentgh_move(d3, d3) == 3);
-    assert(max_lentgh_move(d3, d4) == 2);
-    assert(max_lentgh_move(d3, d5) == 1);
-    assert(max_lentgh_move(d3, d6) == 1);
+    assert(max_length_move(d3, d1) == 1);
+    assert(max_length_move(d3, d2) == 2);
+    assert(max_length_move(d3, d3) == 3);
+    assert(max_length_move(d3, d4) == 2);
+    assert(max_length_move(d3, d5) == 1);
+    assert(max_length_move(d3, d6) == 1);
 
-    assert(max_lentgh_move(d4, d1) == 1);
-    assert(max_lentgh_move(d4, d2) == 1);
-    assert(max_lentgh_move(d4, d3) == 2);
-    assert(max_lentgh_move(d4, d4) == 3);
-    assert(max_lentgh_move(d4, d5) == 2);
-    assert(max_lentgh_move(d4, d6) == 1);
+    assert(max_length_move(d4, d1) == 1);
+    assert(max_length_move(d4, d2) == 1);
+    assert(max_length_move(d4, d3) == 2);
+    assert(max_length_move(d4, d4) == 3);
+    assert(max_length_move(d4, d5) == 2);
+    assert(max_length_move(d4, d6) == 1);
 
-    assert(max_lentgh_move(d5, d1) == 1);
-    assert(max_lentgh_move(d5, d2) == 1);
-    assert(max_lentgh_move(d5, d3) == 1);
-    assert(max_lentgh_move(d5, d4) == 2);
-    assert(max_lentgh_move(d5, d5) == 3);
-    assert(max_lentgh_move(d5, d6) == 2);
+    assert(max_length_move(d5, d1) == 1);
+    assert(max_length_move(d5, d2) == 1);
+    assert(max_length_move(d5, d3) == 1);
+    assert(max_length_move(d5, d4) == 2);
+    assert(max_length_move(d5, d5) == 3);
+    assert(max_length_move(d5, d6) == 2);
 
-    assert(max_lentgh_move(d6, d1) == 2);
-    assert(max_lentgh_move(d6, d2) == 1);
-    assert(max_lentgh_move(d6, d3) == 1);
-    assert(max_lentgh_move(d6, d4) == 1);
-    assert(max_lentgh_move(d6, d5) == 2);
-    assert(max_lentgh_move(d6, d6) == 3);
+    assert(max_length_move(d6, d1) == 2);
+    assert(max_length_move(d6, d2) == 1);
+    assert(max_length_move(d6, d3) == 1);
+    assert(max_length_move(d6, d4) == 1);
+    assert(max_length_move(d6, d5) == 2);
+    assert(max_length_move(d6, d6) == 3);
     printf("OK\n");
 };
 
-void is_empty_color_test() {
+void is_empty_color_test()
+{
     printf("Test %s ", __func__);
-    unsigned int *couleur = malloc(3 * sizeof(unsigned int));
-    couleur[0] = 1;
-    couleur[1] = 0;
-    couleur[2] = 2;
-    assert(is_empty_color(couleur, 0, 3) == 0);
-    assert(is_empty_color(couleur, 1, 3) == 0);
-    assert(is_empty_color(couleur, 2, 3) == 0);
+    unsigned int *visit_state = malloc(3 * sizeof(unsigned int));
+    visit_state[0] = 1;
+    visit_state[1] = 0;
+    visit_state[2] = 2;
+    assert(is_empty_color(visit_state, 0, 3) == 0);
+    assert(is_empty_color(visit_state, 1, 3) == 0);
+    assert(is_empty_color(visit_state, 2, 3) == 0);
 
-    couleur[0] = 0;
+    visit_state[0] = 0;
 
-    assert(is_empty_color(couleur, 1, 3) != 0);
+    assert(is_empty_color(visit_state, 1, 3) != 0);
 
-    couleur[2] = 0;
+    visit_state[2] = 0;
 
-    assert(is_empty_color(couleur, 2, 3) != 0);
+    assert(is_empty_color(visit_state, 2, 3) != 0);
 
-    free(couleur);
+    free(visit_state);
     printf("OK\n");
 }
 
-void outgoing_edge_list_test() {
+void outgoing_edge_list_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create_triangular(3);
@@ -622,8 +655,10 @@ void outgoing_edge_list_test() {
     g->start[1] = 2;
     initialize(0, g);
 
-    void reset(vertex_t * t, unsigned int *d) {
-        for (int i = 0; i < 10; i++) {
+    void reset(vertex_t * t, unsigned int *d)
+    {
+        for (int i = 0; i < 10; i++)
+        {
             t[i] = 19; // > nb sommets
             d[i] = 0;  // < toute dist
         }
@@ -723,7 +758,8 @@ void outgoing_edge_list_test() {
     printf("OK\n");
 };
 
-void get_close_neighbor_test() {
+void get_close_neighbor_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create_triangular(3);
@@ -756,7 +792,8 @@ void get_close_neighbor_test() {
     printf(" OK\n");
 }
 
-void get_edge_neighbors_test() {
+void get_edge_neighbors_test()
+{
     printf("Test %s ", __func__);
 
     struct graph_t *g = graph_create_triangular(3);
@@ -765,8 +802,10 @@ void get_edge_neighbors_test() {
     struct edge_t *test_neighbors = malloc(4 * sizeof(struct edge_t));
     struct edge_t e = {4, 9};
     struct edge_t e_i = {19, 19};
-    void init_edge(struct edge_t * n) {
-        for (int i = 0; i < 4; i++) {
+    void init_edge(struct edge_t * n)
+    {
+        for (int i = 0; i < 4; i++)
+        {
             n[i] = e_i;
         }
     }
@@ -780,11 +819,14 @@ void get_edge_neighbors_test() {
     assert(current_edge_check.fr == e.fr &&
            (current_edge_check.to == e1 || current_edge_check.to == e2));
 
-    if (current_edge_check.to == e1) {
+    if (current_edge_check.to == e1)
+    {
         current_edge_check = test_neighbors[2];
         assert((int)current_edge_check.fr != 19 && (int)current_edge_check.to != 19);
         assert(current_edge_check.fr == e.fr && current_edge_check.to == e2);
-    } else if (current_edge_check.to == e2) {
+    }
+    else if (current_edge_check.to == e2)
+    {
         current_edge_check = test_neighbors[2];
         assert((int)current_edge_check.fr != 19 && (int)current_edge_check.to != 19);
         assert(current_edge_check.fr == e.fr && current_edge_check.to == e1);
@@ -795,11 +837,14 @@ void get_edge_neighbors_test() {
     assert(current_edge_check.fr == e.to &&
            (current_edge_check.to == e1 || current_edge_check.to == e2));
 
-    if (current_edge_check.to == e1) {
+    if (current_edge_check.to == e1)
+    {
         current_edge_check = test_neighbors[3];
         assert((int)current_edge_check.fr != 19 && (int)current_edge_check.to != 19);
         assert(current_edge_check.fr == e.to && current_edge_check.to == e2);
-    } else if (current_edge_check.to == e2) {
+    }
+    else if (current_edge_check.to == e2)
+    {
         current_edge_check = test_neighbors[3];
         assert((int)current_edge_check.fr != 19 && (int)current_edge_check.to != 19);
         assert(current_edge_check.fr == e.to && current_edge_check.to == e1);

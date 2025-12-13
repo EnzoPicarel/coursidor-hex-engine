@@ -77,14 +77,14 @@ install: build build_tests
 	@cp server *.so alltests install/
 
 coverage: build_tests
-	@echo "==> Exécution des tests"
+	@echo "==> Running tests"
 	@./alltests
-	@echo "==> Génération des rapports de couverture"
+	@echo "==> Generating coverage reports"
 	@gcov gen_graph_cov.o player_cov.o > /dev/null
-	@echo "==> Lignes non testées dans gen_graph.c :"
-	@grep "#####" gen_graph.c.gcov || echo "Aucune ligne non testée"
-	@echo "==> Lignes non testées dans astar_player.c :"
-	@grep "#####" astar_player.c.gcov || echo "Aucune ligne non testée"
+	@echo "==> Untested lines in gen_graph.c:"
+	@grep "#####" gen_graph.c.gcov || echo "No untested lines"
+	@echo "==> Untested lines in astar_player.c:"
+	@grep "#####" astar_player.c.gcov || echo "No untested lines"
 
 clean:
 	@echo "Cleaning up..."

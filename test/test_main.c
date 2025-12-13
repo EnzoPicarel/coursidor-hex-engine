@@ -11,11 +11,11 @@ void initialize_test();
 void play_test();
 void finalize_test();
 void cmp_length_test();
-void extractMin_test();
-void release_test();
-void is_in_dir_test();
-void direction_test();
-void A_star_test();
+void extract_min_test();
+void relax_test();
+void is_in_direction_test();
+void get_direction_test();
+void a_star_test();
 void max_length_move_test();
 void outgoing_edge_list_test();
 void is_empty_color_test();
@@ -24,7 +24,8 @@ void build_index_to_hex_table_test();
 void get_close_neighbor_test();
 void get_edge_neighbors_test();
 
-int main() {
+int main()
+{
     // Run graph tests
     printf("=== Graph Tests ===\n");
     create_example_graph_test();
@@ -40,11 +41,11 @@ int main() {
     play_test();
     // finalize_test();
     cmp_length_test();
-    extractMin_test();
-    release_test();
-    is_in_dir_test();
-    direction_test();
-    A_star_test();
+    extract_min_test();
+    relax_test();
+    is_in_direction_test();
+    get_direction_test();
+    a_star_test();
     max_length_move_test();
     is_empty_color_test();
     outgoing_edge_list_test();

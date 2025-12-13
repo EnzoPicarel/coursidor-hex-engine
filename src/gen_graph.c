@@ -1,14 +1,16 @@
 #include "gen_graph.h"
 #include <string.h>
 
-// Création d'un graphe vide
-struct graph_t *graph_create(unsigned int num_vertices) {
+// Create an empty graph
+struct graph_t *graph_create(unsigned int num_vertices)
+{
     struct graph_t *graph = malloc(sizeof(struct graph_t));
     if (!graph)
         return NULL;
 
     graph->t = gsl_spmatrix_uint_alloc(num_vertices, num_vertices);
-    if (!graph->t) {
+    if (!graph->t)
+    {
         free(graph);
         return NULL;
     }
@@ -25,33 +27,40 @@ struct graph_t *graph_create(unsigned int num_vertices) {
     return graph;
 }
 
-// Libération des ressources d'un graphe
-void graph_destroy(struct graph_t *graph) {
-    if (graph) {
-        if (graph->t) {
+// Free all resources held by a graph
+void graph_destroy(struct graph_t *graph)
+{
+    if (graph)
+    {
+        if (graph->t)
+        {
             gsl_spmatrix_uint_free(graph->t);
         }
-        if (graph->objectives) {
+        if (graph->objectives)
+        {
             free(graph->objectives);
         }
         free(graph);
     }
 }
 
-// Ajout d'une arête au graphe
-bool graph_add_edge(struct graph_t *graph, struct edge_t edge, enum dir_t dir) {
+// Add an edge to the graph
+bool graph_add_edge(struct graph_t *graph, struct edge_t edge, enum dir_t dir)
+{
     if (!graph || edge.fr >= graph->num_vertices || edge.to >= graph->num_vertices ||
-        dir == NO_EDGE) {
+        dir == NO_EDGE)
+    {
         return false;
     }
 
-    // On vérifie si l'arête existe déjà
+    // Check if the edge already exists
     if (gsl_spmatrix_uint_get(graph->t, edge.fr, edge.to) != NO_EDGE &&
-        gsl_spmatrix_uint_get(graph->t, edge.fr, edge.to) != WALL_DIR) {
+        gsl_spmatrix_uint_get(graph->t, edge.fr, edge.to) != WALL_DIR)
+    {
         return false;
     }
 
-    // On ajoute l'arête dans les deux sens (graphe non dirigé)
+    // Add the edge in both directions (undirected graph)
     gsl_spmatrix_uint_set(graph->t, edge.fr, edge.to, dir);
     gsl_spmatrix_uint_set(graph->t, edge.to, edge.fr, opposite_dir(dir));
 
@@ -59,25 +68,29 @@ bool graph_add_edge(struct graph_t *graph, struct edge_t edge, enum dir_t dir) {
     return true;
 }
 
-bool graph_add_edge_compressed(struct graph_t *graph, struct edge_t edge, enum dir_t dir) {
+bool graph_add_edge_compressed(struct graph_t *graph, struct edge_t edge, enum dir_t dir)
+{
     manual_edge_set(graph, edge, dir);
 
     graph->num_edges++;
     return true;
 }
 
-// Suppression d'une arête du graphe
-bool graph_remove_edge(struct graph_t *graph, struct edge_t edge) {
-    if (!graph || edge.fr >= graph->num_vertices || edge.to >= graph->num_vertices) {
+// Remove an edge from the graph
+bool graph_remove_edge(struct graph_t *graph, struct edge_t edge)
+{
+    if (!graph || edge.fr >= graph->num_vertices || edge.to >= graph->num_vertices)
+    {
         return false;
     }
 
-    // On vérifie si l'arête existe
-    if (gsl_spmatrix_uint_get(graph->t, edge.fr, edge.to) == NO_EDGE) {
+    // Check if the edge exists
+    if (gsl_spmatrix_uint_get(graph->t, edge.fr, edge.to) == NO_EDGE)
+    {
         return false;
     }
 
-    // On supprime l'arête dans les deux sens
+    // Remove the edge in both directions
     // gsl_spmatrix_uint_set(graph->t, edge.fr, edge.to, WALL_DIR);
     // gsl_spmatrix_uint_set(graph->t, edge.to, edge.fr, WALL_DIR);
     manual_edge_set(graph, edge, WALL_DIR);
@@ -86,7 +99,8 @@ bool graph_remove_edge(struct graph_t *graph, struct edge_t edge) {
     return true;
 }
 
-void manual_edge_set(struct graph_t *graph, struct edge_t edge, enum dir_t replace) {
+void manual_edge_set(struct graph_t *graph, struct edge_t edge, enum dir_t replace)
+{
     unsigned int from = edge.fr;
     unsigned int to = edge.to;
 
@@ -95,18 +109,25 @@ void manual_edge_set(struct graph_t *graph, struct edge_t edge, enum dir_t repla
     int *i = mat->i;
     unsigned int *data = mat->data;
 
-    for (int j = p[from]; j < p[from + 1]; ++j) {
-        if (i[j] == (int)to) {
+    for (int j = p[from]; j < p[from + 1]; ++j)
+    {
+        if (i[j] == (int)to)
+        {
             data[j] = replace;
             break;
         }
     }
 
-    for (int j = p[to]; j < p[to + 1]; ++j) {
-        if (i[j] == (int)from) {
-            if (replace != WALL_DIR && replace != NO_EDGE) {
+    for (int j = p[to]; j < p[to + 1]; ++j)
+    {
+        if (i[j] == (int)from)
+        {
+            if (replace != WALL_DIR && replace != NO_EDGE)
+            {
                 data[j] = opposite_dir(replace);
-            } else {
+            }
+            else
+            {
                 data[j] = replace;
             }
             break;
@@ -114,25 +135,31 @@ void manual_edge_set(struct graph_t *graph, struct edge_t edge, enum dir_t repla
     }
 }
 
-// Obtenir la direction d'une arête
-enum dir_t graph_get_edge_direction(struct graph_t *graph, struct edge_t edge) {
-    if (!graph || edge.fr >= graph->num_vertices || edge.to >= graph->num_vertices) {
+// Get the direction of an edge
+enum dir_t graph_get_edge_direction(struct graph_t *graph, struct edge_t edge)
+{
+    if (!graph || edge.fr >= graph->num_vertices || edge.to >= graph->num_vertices)
+    {
         return NO_EDGE;
     }
     return gsl_spmatrix_uint_get(graph->t, edge.fr, edge.to);
 }
 
-// Vérifier si une arête existe
-bool graph_has_edge(struct graph_t *graph, struct edge_t edge) {
-    if (!graph || edge.fr >= graph->num_vertices || edge.to >= graph->num_vertices) {
+// Check if an edge exists
+bool graph_has_edge(struct graph_t *graph, struct edge_t edge)
+{
+    if (!graph || edge.fr >= graph->num_vertices || edge.to >= graph->num_vertices)
+    {
         return false;
     }
     return gsl_spmatrix_uint_get(graph->t, edge.fr, edge.to) != NO_EDGE;
 }
 
-// Ajout des objectifs au graphe
-bool graph_add_objectives(struct graph_t *graph, unsigned int max_objectives, unsigned int *tab) {
-    if (!graph) {
+// Add objectives to the graph
+bool graph_add_objectives(struct graph_t *graph, unsigned int max_objectives, unsigned int *tab)
+{
+    if (!graph)
+    {
         printf("ERROR\n");
         return false;
     }
@@ -140,30 +167,35 @@ bool graph_add_objectives(struct graph_t *graph, unsigned int max_objectives, un
     graph->num_objectives = 0;
     vertex_t *objectives = malloc(max_objectives * sizeof(vertex_t));
 
-    if (!objectives) {
+    if (!objectives)
+    {
         return false;
     }
 
     graph->objectives = objectives;
-    // à modif selon choix des bases
-    for (unsigned int i = 0; i < max_objectives; i++) {
+    // Adjust based on chosen bases
+    for (unsigned int i = 0; i < max_objectives; i++)
+    {
         graph->objectives[i] = tab[i];
         graph->num_objectives++;
     }
     return true;
 }
 
-// Conversion de la matrice au format CSR
-void graph_ensure_csr_format(struct graph_t *graph) {
-    if (strcmp(gsl_spmatrix_uint_type(graph->t), "CSR") != 0) {
+// Ensure the matrix uses CSR storage
+void graph_ensure_csr_format(struct graph_t *graph)
+{
+    if (strcmp(gsl_spmatrix_uint_type(graph->t), "CSR") != 0)
+    {
         gsl_spmatrix_uint *csr = gsl_spmatrix_uint_compress(graph->t, GSL_SPMATRIX_CSR);
         gsl_spmatrix_uint_free(graph->t);
         graph->t = csr;
     }
 }
 
-// Création d'un pavage triangular de largeur m
-struct graph_t *graph_create_triangular(unsigned int m) {
+// Create a triangular tiling of width m
+struct graph_t *graph_create_triangular(unsigned int m)
+{
     unsigned int num_vertices = 3 * m * m - 3 * m + 1;
     unsigned int num_edges = 9 * m * m - 15 * m + 6;
     unsigned int num_row = 2 * m - 1;
@@ -174,56 +206,65 @@ struct graph_t *graph_create_triangular(unsigned int m) {
 
     graph->type = TRIANGULAR;
 
-    // Ajout des arêtes pour la moitié du haut du pavage
+    // Add edges for the top half of the tiling
     unsigned int vertex = 0;
-    for (unsigned int row = 0; row < m - 1; row++) {
-        for (unsigned int col = 0; col < m + row; col++) {
+    for (unsigned int row = 0; row < m - 1; row++)
+    {
+        for (unsigned int col = 0; col < m + row; col++)
+        {
             unsigned int current = vertex++;
 
-            // Arête horizontale (vers l'est)
-            if (col < m + row - 1) {
+            // Horizontal edge (east)
+            if (col < m + row - 1)
+            {
                 graph_add_edge(graph, (struct edge_t){current, current + 1}, E);
             }
 
-            // Arête diagonale (vers le sud-est)
+            // Diagonal edge (south-east)
             graph_add_edge(graph, (struct edge_t){current, current + m + row + 1}, SE);
 
-            // Arête diagonale (vers le sud-ouest)
+            // Diagonal edge (south-west)
             graph_add_edge(graph, (struct edge_t){current, current + m + row}, SW);
         }
     }
 
-    // Ajout des arêtes pour la ligne du milieu du pavage
-    for (unsigned int col = 0; col < num_row; col++) {
+    // Add edges for the middle row of the tiling
+    for (unsigned int col = 0; col < num_row; col++)
+    {
         unsigned int current = vertex++;
 
-        // Arête horizontale (vers l'est)
-        if (col < num_row - 1) {
+        // Horizontal edge (east)
+        if (col < num_row - 1)
+        {
             graph_add_edge(graph, (struct edge_t){current, current + 1}, E);
         }
     }
 
-    // Ajout des arêtes pour la moitié du bas du pavage
-    for (unsigned int row = m; row < num_row; row++) {
-        for (unsigned int col = 0; col < m + num_row - row - 1; col++) {
+    // Add edges for the bottom half of the tiling
+    for (unsigned int row = m; row < num_row; row++)
+    {
+        for (unsigned int col = 0; col < m + num_row - row - 1; col++)
+        {
             unsigned int current = vertex++;
 
-            // Arête horizontale (vers l'est)
-            if (col < m + num_row - row - 2) {
+            // Horizontal edge (east)
+            if (col < m + num_row - row - 2)
+            {
                 graph_add_edge(graph, (struct edge_t){current, current + 1}, E);
             }
 
-            // Arête diagonale (vers le nord-est)
+            // Diagonal edge (north-east)
             graph_add_edge(graph, (struct edge_t){current, current - (m + num_row - row) + 1}, NE);
 
-            // Arête diagonale (vers le nord-ouest)
+            // Diagonal edge (north-west)
             graph_add_edge(graph, (struct edge_t){current, current - (m + num_row - row)}, NW);
         }
     }
 
-    // Vérification du nombre d'arêtes ajoutées
-    if (graph->num_edges != num_edges) {
-        printf("Erreur: Nombre d'arêtes ajoutées (%u) différent du nombre attendu "
+    // Validate the number of edges added
+    if (graph->num_edges != num_edges)
+    {
+        printf("Error: Added edges count (%u) differs from expected "
                "(%u)\n",
                graph->num_edges, num_edges);
     }
@@ -232,7 +273,8 @@ struct graph_t *graph_create_triangular(unsigned int m) {
     return graph;
 }
 
-struct graph_t *graph_create_cyclic(unsigned int m) {
+struct graph_t *graph_create_cyclic(unsigned int m)
+{
     unsigned int num_edges = 24 * m - 36;
     unsigned int num_row = 2 * m - 1;
 
@@ -245,40 +287,49 @@ struct graph_t *graph_create_cyclic(unsigned int m) {
     unsigned int vertex = 2 * m + 2;
     unsigned int vertex_middle;
 
-    // Enlever les arêtes de la première moitié
-    for (unsigned int row = 2; row < m; row++) {
+    // Remove edges from the first half
+    for (unsigned int row = 2; row < m; row++)
+    {
 
-        if (row == m - 1) {
+        if (row == m - 1)
+        {
             vertex_middle = vertex;
         }
 
-        for (unsigned int col = 1; col < m + row - 2; col++) {
+        for (unsigned int col = 1; col < m + row - 2; col++)
+        {
             unsigned int current = vertex++;
 
-            if (col == 1) {
-                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE) {
+            if (col == 1)
+            {
+                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE)
+                {
                     manual_edge_set(graph, (struct edge_t){current, current + 1}, NO_EDGE);
                     graph->num_edges--;
                 }
             }
 
-            else {
+            else
+            {
 
-                // Arête horizontale (vers l'est)
-                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE) {
+                // Horizontal edge (east)
+                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE)
+                {
                     manual_edge_set(graph, (struct edge_t){current, current + 1}, NO_EDGE);
                     graph->num_edges--;
                 }
 
-                // Arête diagonale (vers le nord-est)
-                if (gsl_spmatrix_uint_get(graph->t, current, current - m - row + 1) != NO_EDGE) {
+                // Diagonal edge (north-east)
+                if (gsl_spmatrix_uint_get(graph->t, current, current - m - row + 1) != NO_EDGE)
+                {
                     manual_edge_set(graph, (struct edge_t){current, current - m - row + 1},
                                     NO_EDGE);
                     graph->num_edges--;
                 }
 
-                // Arête diagonale (vers le nord-ouest)
-                if (gsl_spmatrix_uint_get(graph->t, current, current - m - row) != NO_EDGE) {
+                // Diagonal edge (north-west)
+                if (gsl_spmatrix_uint_get(graph->t, current, current - m - row) != NO_EDGE)
+                {
                     manual_edge_set(graph, (struct edge_t){current, current - m - row}, NO_EDGE);
                     graph->num_edges--;
                 }
@@ -289,36 +340,44 @@ struct graph_t *graph_create_cyclic(unsigned int m) {
 
     vertex = vertex_middle;
 
-    // Enlever les arêtes de la deuxième moitié
-    for (unsigned int row = m - 1; row < num_row - 2; row++) {
-        for (unsigned int col = 1; col < m + num_row - row - 3; col++) {
+    // Remove edges from the second half
+    for (unsigned int row = m - 1; row < num_row - 2; row++)
+    {
+        for (unsigned int col = 1; col < m + num_row - row - 3; col++)
+        {
             unsigned int current = vertex++;
 
-            if (col == 1) {
-                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE) {
+            if (col == 1)
+            {
+                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE)
+                {
                     manual_edge_set(graph, (struct edge_t){current, current + 1}, NO_EDGE);
                     graph->num_edges--;
                 }
             }
 
-            else {
-                // Arête horizontale (vers l'est)
-                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE) {
+            else
+            {
+                // Horizontal edge (east)
+                if (gsl_spmatrix_uint_get(graph->t, current, current + 1) != NO_EDGE)
+                {
                     manual_edge_set(graph, (struct edge_t){current, current + 1}, NO_EDGE);
                     graph->num_edges--;
                 }
 
-                // Arête diagonale (vers le sud-est)
+                // Diagonal edge (south-east)
                 if (gsl_spmatrix_uint_get(graph->t, current, current + m + num_row - row - 1) !=
-                    NO_EDGE) {
+                    NO_EDGE)
+                {
                     manual_edge_set(
                         graph, (struct edge_t){current, current + m + num_row - row - 1}, NO_EDGE);
                     graph->num_edges--;
                 }
 
-                // Arête diagonale (vers le sud-ouest)
+                // Diagonal edge (south-west)
                 if (gsl_spmatrix_uint_get(graph->t, current, current + m + num_row - row - 2) !=
-                    NO_EDGE) {
+                    NO_EDGE)
+                {
                     manual_edge_set(
                         graph, (struct edge_t){current, current + m + num_row - row - 2}, NO_EDGE);
                     graph->num_edges--;
@@ -328,9 +387,10 @@ struct graph_t *graph_create_cyclic(unsigned int m) {
         vertex += 3;
     }
 
-    // Vérification du nombre d'arêtes ajoutées
-    if (graph->num_edges != num_edges) {
-        printf("Erreur: Nombre d'arêtes ajoutées (%u) différent du nombre attendu "
+    // Validate the number of edges added
+    if (graph->num_edges != num_edges)
+    {
+        printf("Error: Added edges count (%u) differs from expected "
                "(%u)\n",
                graph->num_edges, num_edges);
     }
@@ -338,21 +398,25 @@ struct graph_t *graph_create_cyclic(unsigned int m) {
     return graph;
 }
 
-// Obtenir les voisins d'un sommet
-unsigned int *graph_get_neighbors(struct graph_t *graph, unsigned int vertex, unsigned int *count) {
-    if (!graph || vertex >= graph->num_vertices || !count) {
+// Get the neighbors of a vertex
+unsigned int *graph_get_neighbors(struct graph_t *graph, unsigned int vertex, unsigned int *count)
+{
+    if (!graph || vertex >= graph->num_vertices || !count)
+    {
         *count = 0;
         return NULL;
     }
 
-    // On s'assure que la matrice est au format CSR pour une itération efficace
+    // Ensure the matrix is in CSR format for efficient iteration
     graph_ensure_csr_format(graph);
 
-    // Comptage du nombre de voisins
+    // Count neighbors
     *count = 0;
     unsigned int max_k = graph->t->p[vertex + 1];
-    for (unsigned int k = graph->t->p[vertex]; k < max_k; k++) {
-        if (graph->t->data[k] != NO_EDGE && graph->t->data[k] != WALL_DIR) {
+    for (unsigned int k = graph->t->p[vertex]; k < max_k; k++)
+    {
+        if (graph->t->data[k] != NO_EDGE && graph->t->data[k] != WALL_DIR)
+        {
             (*count)++;
         }
     }
@@ -360,17 +424,20 @@ unsigned int *graph_get_neighbors(struct graph_t *graph, unsigned int vertex, un
     if (*count == 0)
         return NULL;
 
-    // Allocation du tableau de voisins
+    // Allocate the neighbor array
     unsigned int *neighbors = malloc(*count * sizeof(unsigned int));
-    if (!neighbors) {
+    if (!neighbors)
+    {
         *count = 0;
         return NULL;
     }
 
-    // Remplissage du tableau
+    // Fill the neighbor array
     unsigned int idx = 0;
-    for (unsigned int k = graph->t->p[vertex]; k < max_k; k++) {
-        if (graph->t->data[k] != NO_EDGE && graph->t->data[k] != WALL_DIR) {
+    for (unsigned int k = graph->t->p[vertex]; k < max_k; k++)
+    {
+        if (graph->t->data[k] != NO_EDGE && graph->t->data[k] != WALL_DIR)
+        {
             neighbors[idx++] = graph->t->i[k];
         }
     }
@@ -378,55 +445,62 @@ unsigned int *graph_get_neighbors(struct graph_t *graph, unsigned int vertex, un
     return neighbors;
 }
 
-// Implémentation d'un algorithme de parcours en largeur pour vérifier si un
-// chemin existe
-bool graph_has_path(struct graph_t *graph, unsigned int from, unsigned int to) {
-    if (!graph || from >= graph->num_vertices || to >= graph->num_vertices) {
+// Breadth-first search to check if a path exists
+bool graph_has_path(struct graph_t *graph, unsigned int from, unsigned int to)
+{
+    if (!graph || from >= graph->num_vertices || to >= graph->num_vertices)
+    {
         return false;
     }
 
-    // Cas trivial
+    // Trivial case
     if (from == to)
         return true;
 
-    // Tableau pour marquer les sommets visités
+    // Array to mark visited vertices
     bool *visited = calloc(graph->num_vertices, sizeof(bool));
     if (!visited)
         return false;
 
-    // File pour le parcours en largeur
+    // Queue for BFS traversal
     unsigned int *queue = malloc(graph->num_vertices * sizeof(unsigned int));
-    if (!queue) {
+    if (!queue)
+    {
         free(visited);
         return false;
     }
 
     unsigned int front = 0, rear = 0;
 
-    // On ajoute le sommet de départ à la file
+    // Enqueue the start vertex
     queue[rear++] = from;
     visited[from] = true;
 
     bool path_found = false;
 
-    // Parcours en largeur
-    while (front < rear && !path_found) {
+    // BFS traversal
+    while (front < rear && !path_found)
+    {
         unsigned int current = queue[front++];
 
-        // Récupération des voisins
+        // Retrieve neighbors
         unsigned int neighbor_count;
         unsigned int *neighbors = graph_get_neighbors(graph, current, &neighbor_count);
 
-        if (neighbors) {
-            for (unsigned int i = 0; i < neighbor_count; i++) {
+        if (neighbors)
+        {
+            for (unsigned int i = 0; i < neighbor_count; i++)
+            {
                 unsigned int neighbor = neighbors[i];
 
-                if (neighbor == to) {
+                if (neighbor == to)
+                {
                     path_found = true;
                     break;
                 }
 
-                if (!visited[neighbor]) {
+                if (!visited[neighbor])
+                {
                     visited[neighbor] = true;
                     queue[rear++] = neighbor;
                 }
@@ -442,42 +516,50 @@ bool graph_has_path(struct graph_t *graph, unsigned int from, unsigned int to) {
     return path_found;
 }
 
-// Fonction pour afficher la matrice d'adjacence complète
-void print_adjacency_matrix(struct graph_t *graph) {
-    if (!graph) {
-        printf("Graphe invalide!\n");
+// Print the full adjacency matrix (CSR structure expanded for readability)
+void print_adjacency_matrix(struct graph_t *graph)
+{
+    if (!graph)
+    {
+        printf("Invalid graph!\n");
         return;
     }
 
-    printf("Matrice d'adjacence (%u x %u):\n", graph->num_vertices, graph->num_vertices);
+    printf("Adjacency matrix (%u x %u):\n", graph->num_vertices, graph->num_vertices);
 
-    // Afficher les indices des colonnes
+    // Print column indices
     printf("    ");
-    for (unsigned int j = 0; j < graph->num_vertices; j++) {
+    for (unsigned int j = 0; j < graph->num_vertices; j++)
+    {
         printf("%2u ", j);
     }
     printf("\n");
 
-    // Ligne de séparation
+    // Separator line
     printf("   ");
-    for (unsigned int j = 0; j < graph->num_vertices; j++) {
+    for (unsigned int j = 0; j < graph->num_vertices; j++)
+    {
         printf("---");
     }
     printf("\n");
 
-    // Afficher chaque ligne de la matrice
-    for (unsigned int i = 0; i < graph->num_vertices; i++) {
-        printf("%2u |", i); // Indice de ligne
+    // Print each row of the matrix
+    for (unsigned int i = 0; i < graph->num_vertices; i++)
+    {
+        printf("%2u |", i); // Row index
 
-        for (unsigned int j = 0; j < graph->num_vertices; j++) {
-            // Récupérer la valeur de la matrice au format CSR
+        for (unsigned int j = 0; j < graph->num_vertices; j++)
+        {
+            // Retrieve the matrix value from the CSR representation
             unsigned int val = NO_EDGE;
 
-            // Parcourir les éléments non nuls de la ligne i
+            // Iterate over non-zero elements of row i
             unsigned int max_k = graph->t->p[i + 1];
-            for (unsigned int k = graph->t->p[i]; k < max_k; k++) {
+            for (unsigned int k = graph->t->p[i]; k < max_k; k++)
+            {
                 unsigned int col = graph->t->i[k];
-                if (col == j) {
+                if (col == j)
+                {
                     val = graph->t->data[k];
                     break;
                 }
@@ -489,24 +571,29 @@ void print_adjacency_matrix(struct graph_t *graph) {
     }
 }
 
-// Fonction pour afficher les informations du graphe
-void print_graph_info(struct graph_t *graph) {
-    if (!graph) {
-        printf("Graphe invalide!\n");
+// Print graph details
+void print_graph_info(struct graph_t *graph)
+{
+    if (!graph)
+    {
+        printf("Invalid graph!\n");
         return;
     }
 
-    printf("Graphe avec %u sommets et %u arêtes\n", graph->num_vertices, graph->num_edges);
-    printf("Format de la matrice: %s\n", gsl_spmatrix_uint_type(graph->t));
+    printf("Graph with %u vertices and %u edges\n", graph->num_vertices, graph->num_edges);
+    printf("Matrix format: %s\n", gsl_spmatrix_uint_type(graph->t));
 
-    // Affichage des arêtes
-    printf("Liste des arêtes:\n");
-    for (unsigned int i = 0; i < graph->num_vertices; i++) {
+    // Display edges
+    printf("Edge list:\n");
+    for (unsigned int i = 0; i < graph->num_vertices; i++)
+    {
         unsigned int max_k = graph->t->p[i + 1];
-        for (unsigned int k = graph->t->p[i]; k < max_k; k++) {
+        for (unsigned int k = graph->t->p[i]; k < max_k; k++)
+        {
             unsigned int j = graph->t->i[k];
             enum dir_t dir = graph->t->data[k];
-            if (dir != NO_EDGE && i < j) { // Pour éviter d'afficher chaque arête deux fois
+            if (dir != NO_EDGE && i < j)
+            { // Avoid printing each edge twice
                 printf("  (%u, %u) - Direction: %d\n", i, j, dir);
             }
         }
