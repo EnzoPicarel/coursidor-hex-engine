@@ -5,7 +5,7 @@ Two players (BLACK/0 and WHITE/1) traverse a board defined by a graph with trian
 
 ---
 
-## Project Subject
+## Project Information
 
 - Subject page:  
     <https://www.labri.fr/perso/renault/working/teaching/projets/2024-25-S6-C-Coursidor.php>
