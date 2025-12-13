@@ -1,0 +1,17 @@
+*.o
+*.so
+*.a
+server
+alltests
+install/
+
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+*.gcda
+*.gcno
+*.dot
+*.png
