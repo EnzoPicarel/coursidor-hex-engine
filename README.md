@@ -24,10 +24,24 @@ Two players (BLACK/0 and WHITE/1) must validate a set of objectives and return t
 * **Libraries:** GSL (GNU Scientific Library - Sparse Matrices), `libm`
 * **System:** POSIX Dynamic Loading (`dlopen`/`dlsym`)
 
-## 📐 Architecture & Technical Highlights
+## 📐 Architecture
+### Technical Highlights
 * **Dynamic Strategy Loading:** Player AIs are compiled as separate shared libraries (`.so`) and loaded by the server at runtime using `dlopen`. This allows for hot-swapping strategies without recompiling the engine.
 * **Sparse Matrix Graph:** The board is represented as a sparse graph (CSR format) to optimize memory for large grid sizes.
 * **Pathfinding:** Implements **A\*** (A-Star) with a hexagonal distance heuristic and **Held-Karp** (TSP) for optimal objective ordering.
+
+### File Organization
+```text
+├── Makefile                # Build automation (Targets: build, install, test)
+├── install/                # Compiled artifacts (server executable + .so libs)
+├── src/
+│   ├── server.c            # Main game engine & Dynamic Loader (dlopen)
+│   ├── gen_graph.c         # Sparse graph generation & Matrix logic
+│   ├── astar_player.c      # A* Pathfinding strategy implementation
+│   ├── heldkarp_player.c   # TSP Solver (Held-Karp algorithm)
+│   └── random_player.c     # Baseline random strategy
+└── test/                   # Unit test suite (Graph validation, Logic tests)
+```
 
 ## 🚀 Getting Started
 
@@ -37,7 +51,6 @@ Two players (BLACK/0 and WHITE/1) must validate a set of objectives and return t
 * `libgsl-dev` (GNU Scientific Library)
 
 ### Installation & Compilation
-
 1. **Build the Engine & Tests**
    ```bash
    # Compiles server, player libraries (.so), and unit tests
@@ -88,7 +101,6 @@ make test
 * **End Conditions:** Invalid move (Loss), Objectives cleared + Return (Win), Max rounds (Draw).
 
 ## 👥 Authors
-
 * **Enzo Picarel**
 * **Raphaël Bely**
 * **Arno Donias**
