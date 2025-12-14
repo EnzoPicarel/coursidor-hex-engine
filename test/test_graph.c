@@ -118,8 +118,8 @@ void create_graph_test()
     printf("\n=== Triangular graph adjacency matrix ===\n");
     print_adjacency_matrix(triangular);
 
-    export_graph_to_dot(triangular, "graph.dot");
-    system("neato -n -Tpng -Gdpi=500 graph.dot -o graph.png");
+    // export_graph_to_dot(triangular, "graph.dot");
+    // system("neato -n -Tpng -Gdpi=500 graph.dot -o graph.png");
     graph_destroy(triangular);
 
     // Cyclic graph creation test
