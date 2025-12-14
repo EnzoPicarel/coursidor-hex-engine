@@ -4,7 +4,7 @@
   <p align="center">
     A strategic C-based board game engine featuring <strong>sparse graph processing</strong>, <strong>dynamic library loading</strong>, and <strong>A* pathfinding</strong>.
     <br />
-    <a href="#getting-started"><strong>Explore the docs »</strong></a>
+    <a href="#🚀-getting-started"><strong>Get Started »</strong></a>
   </p>
   
   ![CI Status](https://img.shields.io/badge/build-passing-brightgreen)
