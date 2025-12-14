@@ -46,19 +46,30 @@ Two players (BLACK/0 and WHITE/1) must validate a set of objectives and return t
 ## 🚀 Getting Started
 
 ### Prerequisites
-* `gcc`
-* `make`
-* `libgsl-dev` (GNU Scientific Library)
+* **GCC**
+* **Make**
+* **GSL** (GNU Scientific Library)
 
-### Installation & Compilation
-1. **Build the Engine & Tests**
+### Installation & Build
+1. **Clone and Setup Environment**
    ```bash
-   # Compiles server, player libraries (.so), and unit tests
-   make build GSL_PATH=$GSL_PATH
-   make build_tests GSL_PATH=$GSL_PATH
+   # Clone the repository
+   git clone https://github.com/EnzoPicarel/coursidor-hex-engine.git
+   cd coursidor-hex-engine
+
+   # Ensure GSL is installed and set the `GSL_PATH` environment variable:
+   whereis gsl
+   export GSL_PATH=/path/to/gsl # Adjust path accordingly 
    ```
 
-2. **Install Artifacts**
+3. **Build the Engine & Tests**
+   ```bash
+   # Compiles server, player libraries (.so), and unit tests
+   make build
+   make build_tests
+   ```
+
+4. **Install Artifacts**
    ```bash
    # Moves executables and libs to ./install directory
    make install
