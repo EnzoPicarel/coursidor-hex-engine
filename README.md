@@ -82,12 +82,6 @@ Run the server with custom graph size (`-m`), max rounds (`-M`), or specific pla
 ./install/server -m 5 -t T -M 50 -O 3 install/astar_player.so install/random_player.so
 ```
 
-## 🧪 Tests
-Run the unit test suite (Graph validation, Wall logic, Memory leaks):
-```bash
-make test
-```
-
 ## 📜 Game Rules
 * **Objective:** Visit all bases (objectives) and return to start.
 * **Movement:**
@@ -99,6 +93,12 @@ make test
     * Removes 2 edges around a vertex.
     * **Constraint:** Cannot completely block a player's path to any objective (Graph connectivity check).
 * **End Conditions:** Invalid move (Loss), Objectives cleared + Return (Win), Max rounds (Draw).
+
+## 🧪 Tests
+Run the unit test suite (Graph validation, Wall logic, Memory leaks):
+```bash
+make test
+```
 
 ## 👥 Authors
 * **Enzo Picarel**
