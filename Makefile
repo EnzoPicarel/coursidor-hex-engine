@@ -74,7 +74,7 @@ test: build_tests install
 install: build build_tests
 	@echo "Installing..."
 	@mkdir -p install
-	@cp server *.so alltests install/
+	@mv server *.so alltests install/
 
 coverage: build_tests
 	@echo "==> Running tests"
