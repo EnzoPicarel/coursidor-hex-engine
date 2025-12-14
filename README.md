@@ -45,7 +45,7 @@ Two players (BLACK/0 and WHITE/1) must validate a set of objectives and return t
    make build_tests GSL_PATH=$GSL_PATH
    ```
 
-3. **Install Artifacts**
+2. **Install Artifacts**
    ```bash
    # Moves executables and libs to ./install directory
    make install
